@@ -1,0 +1,33 @@
+From: Chris Lamb <lamby@debian.org>
+Date: Mon, 2 Apr 2018 09:55:10 +0100
+Subject: Make the build reproducible
+
+Whilst working on the Reproducible Builds effort [0], we noticed
+that pylint could not be built reproducibly.
+
+This is due to iterating over a set in a non-determinstic manner
+and using that in the documentation output.
+
+This was originally filed in Debian as #894607 [1].
+
+ [0] https://reproducible-builds.org/
+ [1] https://bugs.debian.org/894607
+
+Signed-off-by: Chris Lamb <lamby@debian.org>
+---
+ pylint/checkers/base.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/pylint/checkers/base.py b/pylint/checkers/base.py
+index 2d57952..d936801 100644
+--- a/pylint/checkers/base.py
++++ b/pylint/checkers/base.py
+@@ -1261,7 +1261,7 @@ DEFAULT_NAMING_STYLES = {
+ 
+ def _create_naming_options():
+     name_options = []
+-    for name_type in KNOWN_NAME_TYPES:
++    for name_type in sorted(KNOWN_NAME_TYPES):
+         human_readable_name = HUMAN_READABLE_TYPES[name_type]
+         default_style = DEFAULT_NAMING_STYLES[name_type]
+         name_type = name_type.replace('_', '-')

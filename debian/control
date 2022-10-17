@@ -1,0 +1,36 @@
+Source: pylint2
+Section: python
+Priority: optional
+Maintainer: Sandro Tosi <morph@debian.org>
+Uploaders: Python Applications Packaging Team <python-apps-team@lists.alioth.debian.org>
+Build-Depends: debhelper (>= 9), python-all (>= 2.6.6-3~), dh-python
+Build-Depends-Indep: python-astroid (>= 1.5.1), python-unittest2, python-six, python-isort, python-mccabe, python-backports.functools-lru-cache, python-configparser, python-singledispatch, python-setuptools, python-pytest-runner, python-pytest, python-logilab-common (>= 0.19.0)
+Standards-Version: 4.3.0
+Homepage: http://www.pylint.org/
+Vcs-Git: https://salsa.debian.org/python-team/applications/pylint2.git
+Vcs-Browser: https://salsa.debian.org/python-team/applications/pylint2
+
+Package: pylint
+Architecture: all
+Depends: ${python:Depends}, ${misc:Depends}, python-astroid (>= 1.4.5), python-six, python-isort, python-backports.functools-lru-cache, python-configparser, python-singledispatch, python-logilab-common (>= 0.19.0), python-setuptools
+Recommends: python-tk
+Suggests: python-mccabe
+Description: Python code static checker and UML diagram generator
+ Pylint is a Python source code analyzer which looks for programming
+ errors, helps enforcing a coding standard and sniffs for some code
+ smells (as defined in Martin Fowler's Refactoring book)
+ .
+ Pylint can be seen as another PyChecker since nearly all tests you
+ can do with PyChecker can also be done with Pylint. However, Pylint
+ offers some more features, like checking length of lines of code,
+ checking if variable names are well-formed according to your coding
+ standard, or checking if declared interfaces are truly implemented,
+ and much more.
+ .
+ Additionally, it is possible to write plugins to add your own checks.
+ .
+ The package also ships the following additional commands:
+ .
+   * pyreverse: an UML diagram generator
+   * symilar: an independent similarities checker
+   * epylint: Emacs and Flymake compatible Pylint

@@ -1,0 +1,61 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+PYVERS := $(shell pyversions -s -v)
+PYTHON2 := $(shell pyversions -s)
+PY2LIB := $(shell python -c "from distutils.command.build import build ; from distutils.core import Distribution ; b = build(Distribution()) ; b.finalize_options() ; print b.build_purelib")
+PY2SCRIPT := $(shell python -c "from distutils.command.build import build ; from distutils.core import Distribution ; b = build(Distribution()) ; b.finalize_options() ; print b.build_scripts")
+
+%:
+	dh $@ --with python2
+
+override_dh_auto_build:
+	dh_auto_build
+	set -e; \
+	for python in $(PYTHON2); do \
+		NO_SETUPTOOLS=1 $$python setup.py build ; \
+	done
+
+override_dh_auto_test:
+ifeq (,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
+	-for python in $(PYTHON2) ; do \
+		LIB=$$($$python -c "from distutils.command.build import build ; from distutils.core import Distribution ; b = build(Distribution()) ; b.finalize_options() ; print(b.build_purelib)") ; \
+		PYTHONPATH=$(CURDIR)/$$LIB $$python setup.py pytest --addopts "-k 'not test_good_comprehension_checks'" ; \
+	done
+endif
+
+
+override_dh_auto_install:
+	for python in $(PYTHON2); do \
+		NO_SETUPTOOLS=1 $$python setup.py -q install --no-compile \
+			--root=$(CURDIR)/debian/pylint \
+			--install-layout=deb; \
+	done
+
+	# fixes shebangs
+	for exec in pylint symilar epylint pyreverse ; do \
+	  if head -1 debian/pylint/usr/bin/$$exec | grep "^#! */usr/bin" | grep "python" >/dev/null ; then \
+		sed -i "s@^#! */usr/bin/env \+python\$$@#!/usr/bin/python@" debian/pylint/usr/bin/$$exec; \
+	  fi ; \
+	  chmod a+x debian/pylint/usr/bin/$$exec; \
+	done
+
+	install -m 644 elisp/pylint.el debian/pylint/usr/share/emacs/site-lisp/pylint/
+
+override_dh_installman:
+	dh_installman -ppylint  man/*.1
+	rm -rf debian/*/usr/share/man/man1/pylint-gui.1*
+
+override_dh_installchangelogs:
+	dh_installchangelogs -i ChangeLog
+
+override_dh_compress:
+	dh_compress -i -X.py -X.ini -X.xml -Xtest
+
+override_dh_installexamples:
+	dh_installexamples examples/*
+
+override_dh_installdocs:
+	dh_installdocs -A README.rst
