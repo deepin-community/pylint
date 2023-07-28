@@ -4,16 +4,18 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
+PIP           = pip
 PAPER         =
 BUILDDIR      = _build
+PYTHON        = /usr/bin/env python
 PYTHONPATH    =
 
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
-ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees -T -W --keep-going $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) -n .
 
-.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest all
+.PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -32,17 +34,26 @@ help:
 	@echo "  man        to make manual pages"
 	@echo "  changes    to make an overview of all changed/added/deprecated items"
 	@echo "  linkcheck  to check all external links for integrity"
-	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 
 clean:
-	-rm -rf $(BUILDDIR)/*
-	-rm -f reference_guide/features.rst
-	-rm -f extensions.rst
+	-rm -rf $(BUILDDIR)/* user_guide/messages/convention user_guide/messages/error \
+	  user_guide/messages/fatal user_guide/messages/information user_guide/messages/refactor \
+	  user_guide/messages/warning technical_reference/extensions.rst technical_reference/features.rst
 
-html: features.rst extensions.rst
+install-dependencies:
+	@echo "Install dependencies"
+	cd ../ && $(PIP) install -r doc/requirements.txt && cd doc/
+
+build-html:
+	@echo "If you did not run 'make install-dependencies', you need to."
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
-	@echo
-	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
+	@echo "HTML build complete"
+
+html: install-dependencies build-html
+	$(SPHINXBUILD) -b linkcheck -q $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
+	@echo "Link check complete; look for any errors in the above output " \
+	      "or in $(BUILDDIR)/linkcheck/output.txt."
+
 
 dirhtml:
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
@@ -122,35 +133,7 @@ changes:
 	@echo "The overview file is in $(BUILDDIR)/changes."
 
 linkcheck:
-	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
+	$(SPHINXBUILD) -b linkcheck -q $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
 	@echo
 	@echo "Link check complete; look for any errors in the above output " \
 	      "or in $(BUILDDIR)/linkcheck/output.txt."
-
-doctest:
-	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) $(BUILDDIR)/doctest
-	@echo "Testing of doctests in the sources finished, look at the " \
-	      "results in $(BUILDDIR)/doctest/output.txt."
-
-extensions.rst: exts/pylint_extensions.py
-extensions.rst: ../pylint/utils.py
-extensions.rst: $(shell find ../pylint/extensions -type f -regex '.*\.py')
-extensions.rst: $(shell find ../pylint/extensions -type f -regex '.*\.rst')
-	rm -f extensions.rst
-	PYTHONPATH=$(PYTHONPATH) ./exts/pylint_extensions.py
-
-features.rst: exts/pylint_features.py
-features.rst: ../pylint/utils.py
-features.rst: $(shell find ../pylint/checkers -type f -regex '.*\.py')
-	rm -f features.rst
-	PYTHONPATH=$(PYTHONPATH) ./exts/pylint_features.py
-
-gen-examples:
-	chmod u+w ../examples/pylintrc
-	pylint --generate-rcfile > ../examples/pylintrc
-
-gen-man:
-	chmod u+w ../man/pylint.1
-	pylint --generate-man > ../man/pylint.1
-
-all: html gen-man gen-examples
