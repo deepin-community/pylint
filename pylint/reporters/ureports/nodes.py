@@ -1,116 +1,113 @@
-# Copyright (c) 2015-2016 Claudiu Popa <pcmanticore@gmail.com>
-
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/master/COPYING
+# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
 
 """Micro reports objects.
 
 A micro report is a tree of layout and content objects.
 """
 
-from six import string_types
+from __future__ import annotations
+
+from collections.abc import Iterable, Iterator
+from typing import Any, Callable, TypeVar
+
+from pylint.reporters.ureports.base_writer import BaseWriter
+
+_T = TypeVar("_T")
+_VNodeT = TypeVar("_VNodeT", bound="VNode")
+VisitLeaveFunction = Callable[[_T, Any, Any], None]
 
 
-class VNode(object):
+class VNode:
+    def __init__(self) -> None:
+        self.parent: BaseLayout | None = None
+        self.children: list[VNode] = []
+        self.visitor_name: str = self.__class__.__name__.lower()
 
-    def __init__(self, nid=None):
-        self.id = nid
-        # navigation
-        self.parent = None
-        self.children = []
-
-    def __iter__(self):
+    def __iter__(self) -> Iterator[VNode]:
         return iter(self.children)
 
-    def append(self, child):
-        """add a node to children"""
-        self.children.append(child)
-        child.parent = self
-
-    def insert(self, index, child):
-        """insert a child node"""
-        self.children.insert(index, child)
-        child.parent = self
-
-    def _get_visit_name(self):
-        """
-        return the visit name for the mixed class. When calling 'accept', the
-        method <'visit_' + name returned by this method> will be called on the
-        visitor
-        """
-        try:
-            return self.TYPE.replace('-', '_')
-        except Exception:
-            return self.__class__.__name__.lower()
-
-    def accept(self, visitor, *args, **kwargs):
-        func = getattr(visitor, 'visit_%s' % self._get_visit_name())
+    def accept(self: _VNodeT, visitor: BaseWriter, *args: Any, **kwargs: Any) -> None:
+        func: VisitLeaveFunction[_VNodeT] = getattr(
+            visitor, f"visit_{self.visitor_name}"
+        )
         return func(self, *args, **kwargs)
 
-    def leave(self, visitor, *args, **kwargs):
-        func = getattr(visitor, 'leave_%s' % self._get_visit_name())
+    def leave(self: _VNodeT, visitor: BaseWriter, *args: Any, **kwargs: Any) -> None:
+        func: VisitLeaveFunction[_VNodeT] = getattr(
+            visitor, f"leave_{self.visitor_name}"
+        )
         return func(self, *args, **kwargs)
 
 
 class BaseLayout(VNode):
-    """base container node
+    """Base container node.
 
     attributes
     * children : components in this table (i.e. the table's cells)
     """
-    def __init__(self, children=(), **kwargs):
-        super(BaseLayout, self).__init__(**kwargs)
+
+    def __init__(self, children: Iterable[Text | str] = ()) -> None:
+        super().__init__()
         for child in children:
             if isinstance(child, VNode):
                 self.append(child)
             else:
                 self.add_text(child)
 
-    def append(self, child):
-        """overridden to detect problems easily"""
+    def append(self, child: VNode) -> None:
+        """Add a node to children."""
         assert child not in self.parents()
-        VNode.append(self, child)
+        self.children.append(child)
+        child.parent = self
 
-    def parents(self):
-        """return the ancestor nodes"""
+    def insert(self, index: int, child: VNode) -> None:
+        """Insert a child node."""
+        self.children.insert(index, child)
+        child.parent = self
+
+    def parents(self) -> list[BaseLayout]:
+        """Return the ancestor nodes."""
         assert self.parent is not self
         if self.parent is None:
             return []
         return [self.parent] + self.parent.parents()
 
-    def add_text(self, text):
-        """shortcut to add text data"""
+    def add_text(self, text: str) -> None:
+        """Shortcut to add text data."""
         self.children.append(Text(text))
 
 
 # non container nodes #########################################################
 
+
 class Text(VNode):
-    """a text portion
+    """A text portion.
 
     attributes :
     * data : the text value as an encoded or unicode string
     """
-    def __init__(self, data, escaped=True, **kwargs):
-        super(Text, self).__init__(**kwargs)
-        #if isinstance(data, unicode):
-        #    data = data.encode('ascii')
-        assert isinstance(data, string_types), data.__class__
+
+    def __init__(self, data: str, escaped: bool = True) -> None:
+        super().__init__()
         self.escaped = escaped
         self.data = data
 
 
 class VerbatimText(Text):
-    """a verbatim text, display the raw data
+    """A verbatim text, display the raw data.
 
     attributes :
     * data : the text value as an encoded or unicode string
     """
 
+
 # container nodes #############################################################
 
+
 class Section(BaseLayout):
-    """a section
+    """A section.
 
     attributes :
     * BaseLayout attributes
@@ -120,39 +117,44 @@ class Section(BaseLayout):
     a description may also be given to the constructor, it'll be added
     as a first paragraph
     """
-    def __init__(self, title=None, description=None, **kwargs):
-        super(Section, self).__init__(**kwargs)
+
+    def __init__(
+        self,
+        title: str | None = None,
+        description: str | None = None,
+        children: Iterable[Text | str] = (),
+    ) -> None:
+        super().__init__(children=children)
         if description:
             self.insert(0, Paragraph([Text(description)]))
         if title:
             self.insert(0, Title(children=(title,)))
+        self.report_id: str = ""  # Used in ReportHandlerMixin.make_reports
 
 
 class EvaluationSection(Section):
-
-    def __init__(self, message, **kwargs):
-        super(EvaluationSection, self).__init__(**kwargs)
+    def __init__(self, message: str, children: Iterable[Text | str] = ()) -> None:
+        super().__init__(children=children)
         title = Paragraph()
         title.append(Text("-" * len(message)))
         self.append(title)
-
         message_body = Paragraph()
         message_body.append(Text(message))
         self.append(message_body)
 
 
 class Title(BaseLayout):
-    """a title
+    """A title.
 
     attributes :
     * BaseLayout attributes
 
-    A title must not contains a section nor a paragraph!
+    A title must not contain a section nor a paragraph!
     """
 
 
 class Paragraph(BaseLayout):
-    """a simple text paragraph
+    """A simple text paragraph.
 
     attributes :
     * BaseLayout attributes
@@ -162,7 +164,7 @@ class Paragraph(BaseLayout):
 
 
 class Table(BaseLayout):
-    """some tabular data
+    """Some tabular data.
 
     attributes :
     * BaseLayout attributes
@@ -171,10 +173,16 @@ class Table(BaseLayout):
     * cheaders : the first col's elements are table's header
     * title : the table's optional title
     """
-    def __init__(self, cols, title=None,
-                 rheaders=0, cheaders=0,
-                 **kwargs):
-        super(Table, self).__init__(**kwargs)
+
+    def __init__(
+        self,
+        cols: int,
+        title: str | None = None,
+        rheaders: int = 0,
+        cheaders: int = 0,
+        children: Iterable[Text | str] = (),
+    ) -> None:
+        super().__init__(children=children)
         assert isinstance(cols, int)
         self.cols = cols
         self.title = title

@@ -1,1 +1,3 @@
-0002-Make-the-build-reproducible.patch
+avoid-pip.patch
+docs-no-furo.patch
+docs-disable-warnings-as-errors.patch
