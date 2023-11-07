@@ -1,34 +1,334 @@
-pylint2 (1.9.4-1) unstable; urgency=medium
+pylint (2.17.4-1) unstable; urgency=medium
+
+  * New upstream release; Closes: #1038258
+  * debian/control
+    - bump b-d on astroid to >= 2.15.4
+
+ -- Sandro Tosi <morph@debian.org>  Wed, 26 Jul 2023 03:19:25 -0400
+
+pylint (2.16.2-2) unstable; urgency=medium
+
+  * debian/rules
+    - reorg how we skip tests, removing the ones now fixed
+  * debian/control
+    - bump b-d on astroid to >= 2.14.2; Closes: #1032043
+
+ -- Sandro Tosi <morph@debian.org>  Tue, 28 Feb 2023 01:04:13 -0500
+
+pylint (2.16.2-1) unstable; urgency=medium
+
+  * New upstream release
+  * debian/rules
+    - tests: only limit to tests/ directory for discovery
+    - tests: skip test_allow_reexport_package, test_writing_minimal_file
+  * debian/patches/PR7521.patch
+    - drop patch, merged upstream
+  * stop installing emacs script, removed upstream; Closes: #563000, #613646,
+    #860983
+
+ -- Sandro Tosi <morph@debian.org>  Sat, 25 Feb 2023 20:58:26 -0500
+
+pylint (2.15.10-1) unstable; urgency=medium
 
   * New upstream release
   * debian/copyright
     - extend packaging copyright years
 
- -- Sandro Tosi <morph@debian.org>  Fri, 01 Feb 2019 18:57:52 -0500
+ -- Sandro Tosi <morph@debian.org>  Sun, 22 Jan 2023 00:57:05 -0500
 
-pylint2 (1.9.3-1) unstable; urgency=medium
+pylint (2.15.9-1) unstable; urgency=medium
+
+  * New upstream release
+  * debian/control
+    - bump Standards-Version to 4.6.2.0 (no changes needed)
+    - run autopkgtest via autopkgtest-pkg-pybuild
+  * debian/rules
+    - exclude test_linter_with_unpickleable_plugins_is_pickleable test, fails
+      when running in autopkgtest
+
+ -- Sandro Tosi <morph@debian.org>  Sat, 31 Dec 2022 01:38:19 -0500
+
+pylint (2.15.8-1) unstable; urgency=medium
+
+  * New upstream release
+  * debian/control
+    - bump astroid b-d to >= 2.12.13
+    - bump dill b-d to >= 0.3.6, needed for tests to pass with python 3.11;
+      Closes: #1025322
+    - bump Standards-Version to 4.6.1.0 (no changes needed)
+  * debian/NEWS, debian/NEWS.Debian
+    - remove NEWS, very ancient
+  * debian/copyright
+    - extend packaging copyright years
+
+ -- Sandro Tosi <morph@debian.org>  Sat, 10 Dec 2022 20:35:42 -0500
+
+pylint (2.15.5-1) unstable; urgency=medium
+
+  * New upstream release; Closes: #1021895
+  * debian/control
+    - bump b-d on astroid to >= 2.12.12
+
+ -- Sandro Tosi <morph@debian.org>  Sat, 22 Oct 2022 20:27:36 -0400
+
+pylint (2.15.3-1) unstable; urgency=medium
+
+  * New upstream release; Closes: #1019887
+  * debian/patches/avoid-pip.patch
+    - refresh patch
+  * debian/patches/gh_issue_3198.patch
+    - drop patch, no longer needed
+  * debian/control
+    - switch to pyproject pybuild plugin
+    - add dill, tomlkit (build) and sphinx-reredirects, myst-parser (doc) to b-d
+    - bump versioned b-d on astroid to >= 2.12.10
+  * debian/patches/docs-no-furo.patch
+    - dont use the un-packaged furo theme in doc
+  * debian/patches/PR7521.patch
+    - make sure upstream dont change the `.pybuild` directory name during tests
+  * debian/patches/docs-disable-warnings-as-errors.patch
+    - dont treat warnings as errors when building doc
+  * debian/rules
+    - build doc using the `build-html` target
+    - stop installing changelog, removed upstream
+    - skip test__test_environ_pythonpath_no_arg during build
+  * Update upstream website URL
+
+ -- Sandro Tosi <morph@debian.org>  Sat, 24 Sep 2022 02:34:54 -0400
+
+pylint (2.12.2-1) unstable; urgency=medium
+
+  * New upstream release; Closes: #1001137
+  * debian/control
+    - bump versioned b-d on astroid to >= 2.9.0
+    - add python3-git to b-d, needed by tests
+    - bump Standards-Version to 4.6.0.1 (no changes needed)
+  * debian/copyright
+    - update upstream copyright notices
+  * debian/patches/gh_issue_3198.patch
+    - refresh patch
+  * drop transitional package pylint3, no longer needed
+
+ -- Sandro Tosi <morph@debian.org>  Sun, 05 Dec 2021 02:02:10 -0500
+
+pylint (2.11.1-1) unstable; urgency=medium
 
   * New upstream release
   * debian/watch
-    - track only 1.x releases
+    - track github releases
+  * debian/copyright
+    - update upstream copyright notices
+  * debian/control
+    - bump versioned b-d on astroid to >= 2.8.0
+    - add typing-extensions to b-d, needed to build package
+    - merge b-d and b-d-i
+    - add platformdirs to b-d, needed to build doc
+  * debian/patches/gh_issue_3198.patch
+    - refresh patch onto new upstream code
+  * debian/rules
+    - temporarily exclude some failing tests
+    - dont install manpages, they've been removed upstream
+
+ -- Sandro Tosi <morph@debian.org>  Wed, 03 Nov 2021 00:33:18 -0400
+
+pylint (2.7.2-3) unstable; urgency=medium
+
+  * source only upload
+
+ -- Sandro Tosi <morph@debian.org>  Wed, 16 Jun 2021 21:12:44 -0400
+
+pylint (2.7.2-2) unstable; urgency=medium
+
+  * Team upload
+  * debian/control
+    - Introduce pylint3 trantional package for smooth upgrade (Closes: #968897)
+
+ -- Hideki Yamane <henrich@debian.org>  Mon, 14 Jun 2021 23:03:38 +0900
+
+pylint (2.7.2-1) unstable; urgency=medium
+
+  * New upstream release
+  * debian/control
+    - bump b-d on astroid to >= 2.5.1
+    - bump Standards-Version to 4.5.1 (no changes needed)
+  * debian/copyright
+    - update upstream copyright notices
+  * debian/watch
+    - bump version to 4
+
+ -- Sandro Tosi <morph@debian.org>  Sun, 28 Feb 2021 18:06:57 -0500
+
+pylint (2.7.1-1) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * d/control: Update Vcs-* fields with new Debian Python Team Salsa
+    layout.
+
+  [ Sandro Tosi ]
+  * New upstream release; Closes: Closes: #973168
+  * Use the new Debian Python Team contact name and address
+  * debian/copyright
+    - update upstream copyright notices
+    - extend packaging copyright years
+
+ -- Sandro Tosi <morph@debian.org>  Wed, 24 Feb 2021 00:12:21 -0500
+
+pylint (2.6.0-1) unstable; urgency=medium
+
+  * New upstream release
+  * debian/copyright
+    - update upstream copyright notices
+  * debian/patches/3725.patch
+    - drop patch, released upstream
+  * debian/control
+    - run wrap-and-sort
+
+ -- Sandro Tosi <morph@debian.org>  Sat, 19 Sep 2020 23:18:39 -0400
+
+pylint (2.5.3-2) unstable; urgency=medium
+
+  [ Gianfranco Costamagna ]
+  * debian/patches/3725.patch:
+    - cherry-pick and adapt upstream proposed fix for new isort; Closes: #966131
+
+  [ Tristan Seligmann ]
+  * Fix substvars.
+  * Use secure URI in Homepage field.
+  * Set upstream metadata fields: Bug-Database, Bug-Submit, Repository,
+    Repository-Browse.
+  * Update standards version to 4.5.0, no changes needed.
+
+ -- Sandro Tosi <morph@debian.org>  Sun, 02 Aug 2020 22:38:19 -0400
+
+pylint (2.5.3-1) unstable; urgency=medium
+
+  * New upstream release
+  * debian/copyright
+    - extend packaging copyright years
+    - (semi-automatic) update upstream copyright information
+  * debian/control
+    - bump versioned dep on astroid to >= 2.4.0
+    - add new b-d toml
+    - add pytest_benchmark to b-d and mark other pytest b-d as nocheck
+    - bump compat to 13
+  * debian/patches/*
+    - refresh, drop patches
+  * debian/rules
+    - remove spurious artifact called classes.dot
+
+ -- Sandro Tosi <morph@debian.org>  Tue, 21 Jul 2020 02:18:14 -0400
+
+pylint (2.4.4-2) unstable; urgency=medium
+
+  * debian/control
+    - Breaks+Replaces+Provides pylint3; Closes: #940012, #940917
+
+ -- Sandro Tosi <morph@debian.org>  Wed, 11 Dec 2019 15:20:49 -0500
+
+pylint (2.4.4-1) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * Bump Standards-Version to 4.4.1.
+
+  [ Sandro Tosi ]
+  * New upstream release; Closes: #944987
+  * debian/control
+    - add python3-docs-theme to b-d (doc) and bump astroid version
+  * debian/copyright
+    - update upstream copyright info
+    - extend packaging copyright years
+  * debian/patches/revert-documentation-theme.patch
+    - drop, no longer needed
+  * debian/patches/3d8e0b39f2c41e50c664847a3397c60ee883efd4.patch
+    - fix documentation build
+  * debian/rules
+    - simplify how we setup/teardown tests
+  * debian/patches/gh_issue_3198.patch
+    - skip failing test
+  * debian/pylint.lintian-overrides
+    - remove overrides, no longer needed
+
+ -- Sandro Tosi <morph@debian.org>  Thu, 21 Nov 2019 12:31:56 -0500
+
+pylint (2.2.2-4) unstable; urgency=medium
+
+  * debian/control
+    - dont make pylint conflict with pylint3, until all packages have removed
+      their deps to `pylint3`; Closes: #940012
+
+ -- Sandro Tosi <morph@debian.org>  Fri, 13 Sep 2019 22:50:25 -0400
+
+pylint (2.2.2-3) unstable; urgency=medium
+
+  * debian/control
+    - add Breaks+Replaces: pylint (<< 2) for -doc; Closes: #938955
+  * restore proper installation of pylint.el (lost during the pylint-pylint2 duo
+    source existance); Closes: #939524
+
+ -- Sandro Tosi <morph@debian.org>  Thu, 05 Sep 2019 23:40:23 -0400
+
+pylint (2.2.2-2) unstable; urgency=medium
+
+  [ Ondřej Nový ]
+  * Use debhelper-compat instead of debian/compat.
+  * Bump Standards-Version to 4.4.0.
+
+  [ Sandro Tosi ]
+  * switch back from pylint3 to pylint
+
+ -- Sandro Tosi <morph@debian.org>  Mon, 26 Aug 2019 18:24:34 -0400
+
+pylint (2.2.2-1) unstable; urgency=medium
+
+  * New upstream release
+  * debian/copyright
+    - update upstream copyright notices
   * debian/control
     - bump Standards-Version to 4.3.0 (no changes needed)
-    - update Vcs-* fields to a proper git repo
+  * drop doc_makefile_python3.patch, use PYTHON in d/rules
+  * debian/patches
+    - drop add-pytest.ini.patch, refresh
 
- -- Sandro Tosi <morph@debian.org>  Wed, 26 Dec 2018 10:35:09 -0500
+ -- Sandro Tosi <morph@debian.org>  Wed, 26 Dec 2018 11:14:27 -0500
 
-pylint2 (1.9.2-2) unstable; urgency=medium
+pylint (2.1.1-2) unstable; urgency=medium
 
   * Team upload.
+  * Set Rules-Requires-Root:no.
+  * Install the test files again, as they are needed by some packages.
+  * Mark pylint-doc as Multi-Arch:foreign (from the m-a hinter).
+  * Add some Breaks:  Closes: #909650
+    + python3-pylint-django (<< 2.0)
+    + python3-pylint-plugin-utils (<< 0.4)
+    + python3-pytest-pylint (<< 0.10)
+  * Use "byte compile exception patterns" feature to exclude tests from
+    byte-compiling, instead of shipping a manual postinst file.
+    Thanks to Piotr Ożarowski for proposing this solution!
+  * Override some false positive lintian tags due to the tests files.
+
+ -- Mattia Rizzolo <mattia@debian.org>  Wed, 26 Sep 2018 15:54:09 +0200
+
+pylint (2.1.1-1) unstable; urgency=medium
+
+  [ Benjamin Drung ]
+  * Team upload.
+  * New upstream release.
+    - Support Python 3.7 (Closes: #909490, LP: #1785080)
+  * debian/patches:
+    - Add pytest.ini (missing in the release tarball)
+    - Avoid running pip while building documentation
+    - Revert HTML documentation theme to 'nature' since the
+      'python_docs_theme' is not packaged in Debian yet
+  * Switch to debhelper 11
+  * Drop python2 package, built from the pylint2 source package
+  * Use pybuild instead of distutils
+  * Do not install pylint's test suite and pre-compile pylint again
+  * Bump Standards-Version to 4.2.1
 
   [ Ondřej Nový ]
   * d/changelog: Remove trailing whitespaces
 
-  [ Nicolas Dandrimont ]
-  * Split into source package pylint2, only build Python2 packages
-  * Update dh_installemacsen postinst snippet
-
- -- Nicolas Dandrimont <olasd@debian.org>  Wed, 26 Sep 2018 15:49:26 +0200
+ -- Benjamin Drung <benjamin.drung@profitbricks.com>  Tue, 25 Sep 2018 14:30:52 +0200
 
 pylint (1.9.2-1) unstable; urgency=medium
 
@@ -897,4 +1197,3 @@ logilab-pylint (0.1.0-1) unstable; urgency=low
   * Initial Release.
 
  -- Sylvain Thénault <sylvain.thenault@logilab.fr>  Wed, 23 Apr 2003 14:42:05 +0200
-
