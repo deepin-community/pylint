@@ -81,9 +81,9 @@ Basic checker Messages
 :return-outside-function (E0104): *Return outside function*
   Used when a "return" statement is found outside a function or method.
 :return-arg-in-generator (E0106): *Return with argument inside generator*
-  Used when a "return" statement with an argument is found outside in a
-  generator function or method (e.g. with some "yield" statements). This
-  message can't be emitted when using Python >= 3.3.
+  Used when a "return" statement with an argument is found in a generator
+  function or method (e.g. with some "yield" statements). This message can't be
+  emitted when using Python >= 3.3.
 :invalid-star-assignment-target (E0113): *Starred assignment target must be in a list or tuple*
   Emitted when a star expression is used as a starred assignment target.
 :bad-reversed-sequence (E0111): *The first reversed() argument is not a sequence*
@@ -108,6 +108,9 @@ Basic checker Messages
   Used when a break or a return statement is found inside the finally clause of
   a try...finally block: the exceptions raised in the try clause will be
   silently swallowed instead of being re-raised.
+:return-in-finally (W0134): *'return' shadowed by the 'finally' clause.*
+  Emitted when a 'return' statement is found in a 'finally' block. This will
+  overwrite the return value of a function and should be avoided.
 :assert-on-tuple (W0199): *Assert called on a populated tuple. Did you mean 'assert x,y'?*
   A call of assert on a tuple will always evaluate to true if the tuple is not
   empty, and will always evaluate to false if it is.
@@ -163,8 +166,12 @@ Basic checker Messages
   This is a particular case of W0104 with its own message so you can easily
   disable it if you're using those strings as documentation, instead of
   comments.
+:contextmanager-generator-missing-cleanup (W0135): *The context used in function %r will not be exited.*
+  Used when a contextmanager is used inside a generator function and the
+  cleanup is not handled.
 :unnecessary-pass (W0107): *Unnecessary pass statement*
-  Used when a "pass" statement that can be avoided is encountered.
+  Used when a "pass" statement can be removed without affecting the behaviour
+  of the code.
 :unreachable (W0101): *Unreachable code*
   Used when there is some code behind a "return" or "raise" statement, which
   will never be accessed.
@@ -389,6 +396,18 @@ Classes checker Messages
   an unexpected reason. Please report this kind if you don't make sense of it.
 
 
+Dataclass checker
+~~~~~~~~~~~~~~~~~
+
+Verbatim name of the checker is ``dataclass``.
+
+Dataclass checker Messages
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+:invalid-field-call (E3701): *Invalid usage of field(), %s*
+  The dataclasses.field() specifier should only be used as the value of an
+  assignment within a dataclass, or within the make_dataclass() function.
+
+
 Design checker
 ~~~~~~~~~~~~~~
 
@@ -415,6 +434,10 @@ Design checker Messages
   simpler (and so easier to use) class.
 :too-many-locals (R0914): *Too many local variables (%s/%s)*
   Used when a function or method has too many local variables.
+:too-many-positional (R0917): *Too many positional arguments in a function call.*
+  Will be implemented in https://github.com/pylint-
+  dev/pylint/issues/9099,msgid/symbol pair reserved for compatibility with
+  ruff, see https://github.com/astral-sh/ruff/issues/8946.
 :too-many-public-methods (R0904): *Too many public methods (%s/%s)*
   Used when class has too many public methods, try to reduce this to get a
   simpler (and so easier to use) class.
@@ -771,7 +794,7 @@ See also :ref:`refactoring checker's options' documentation <refactoring-options
 
 Refactoring checker Messages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:simplifiable-condition (R1726): *Boolean condition '%s' may be simplified to '%s'*
+:simplifiable-condition (R1726): *Boolean condition "%s" may be simplified to "%s"*
   Emitted when a boolean condition is able to be simplified.
 :condition-evals-to-constant (R1727): *Boolean condition '%s' will always evaluate to '%s'*
   Emitted when a boolean condition can be simplified to a constant value.
@@ -886,6 +909,9 @@ Refactoring checker Messages
 :unnecessary-comprehension (R1721): *Unnecessary use of a comprehension, use %s instead.*
   Instead of using an identity comprehension, consider using the list, dict or
   set constructor. It is faster and simpler.
+:use-yield-from (R1737): *Use 'yield from' directly instead of yielding each element one by one*
+  Yielding directly from the iterator is faster and arguably cleaner code than
+  yielding each element one by one in the loop.
 :use-a-generator (R1729): *Use a generator instead '%s(%s)'*
   Comprehension inside of 'any', 'all', 'max', 'min' or 'sum' is unnecessary. A
   generator would be sufficient and faster.
@@ -893,12 +919,24 @@ Refactoring checker Messages
   Emitted when a single "return" or "return None" statement is found at the end
   of function or method definition. This statement can safely be removed
   because Python will implicitly return None
-:use-implicit-booleaness-not-comparison (C1803): *'%s' can be simplified to '%s' as an empty %s is falsey*
-  Used when Pylint detects that collection literal comparison is being used to
-  check for emptiness; Use implicit booleaness instead of a collection classes;
-  empty collections are considered as false
-:unneeded-not (C0113): *Consider changing "%s" to "%s"*
-  Used when a boolean expression contains an unneeded negation.
+:use-implicit-booleaness-not-comparison-to-string (C1804): *"%s" can be simplified to "%s", if it is striclty a string, as an empty string is falsey*
+  Empty string are considered false in a boolean context. Following this check
+  blindly in weakly typed code base can create hard to debug issues. If the
+  value can be something else that is falsey but not a string (for example
+  ``None``, an empty sequence, or ``0``) the code will not be equivalent.
+:use-implicit-booleaness-not-comparison (C1803): *"%s" can be simplified to "%s", if it is strictly a sequence, as an empty %s is falsey*
+  Empty sequences are considered false in a boolean context. Following this
+  check blindly in weakly typed code base can create hard to debug issues. If
+  the value can be something else that is falsey but not a sequence (for
+  example ``None``, an empty string, or ``0``) the code will not be equivalent.
+:use-implicit-booleaness-not-comparison-to-zero (C1805): *"%s" can be simplified to "%s", if it is strictly an int, as 0 is falsey*
+  0 is considered false in a boolean context. Following this check blindly in
+  weakly typed code base can create hard to debug issues. If the value can be
+  something else that is falsey but not an int (for example ``None``, an empty
+  string, or an empty sequence) the code will not be equivalent.
+:unnecessary-negation (C0117): *Consider changing "%s" to "%s"*
+  Used when a boolean expression contains an unneeded negation, e.g. when two
+  negation operators cancel each other out.
 :consider-iterating-dictionary (C0201): *Consider iterating the dictionary directly instead of calling .keys()*
   Emitted when the keys of a dictionary are iterated through the ``.keys()``
   method or when ``.keys()`` is used for a membership check. It is enough to
@@ -912,13 +950,12 @@ Refactoring checker Messages
   Emitted when code that iterates with range and len is encountered. Such code
   can be simplified by using the enumerate builtin.
 :use-implicit-booleaness-not-len (C1802): *Do not use `len(SEQUENCE)` without comparison to determine if a sequence is empty*
-  Used when Pylint detects that len(sequence) is being used without explicit
-  comparison inside a condition to determine if a sequence is empty. Instead of
-  coercing the length to a boolean, either rely on the fact that empty
-  sequences are false or compare the length against a scalar.
-:consider-using-f-string (C0209): *Formatting a regular string which could be a f-string*
+  Empty sequences are considered false in a boolean context. You can either
+  remove the call to 'len' (``if not x``) or compare the length against a
+  scalar (``if len(x) > 1``).
+:consider-using-f-string (C0209): *Formatting a regular string which could be an f-string*
   Used when we detect a string that is being formatted with format() or % which
-  could potentially be a f-string. The use of f-strings is preferred. Requires
+  could potentially be an f-string. The use of f-strings is preferred. Requires
   Python 3.6 and ``py-version >= 3.6``.
 :use-maxsplit-arg (C0207): *Use %s instead*
   Emitted when accessing only the first or last element of str.split(). The
@@ -1017,6 +1054,8 @@ Stdlib checker Messages
   emitted when using Python >= 3.5.
 :deprecated-argument (W4903): *Using deprecated argument %s of method %s()*
   The argument is marked as deprecated and will be removed in the future.
+:deprecated-attribute (W4906): *Using deprecated attribute %r*
+  The attribute is marked as deprecated and will be removed in the future.
 :deprecated-class (W4904): *Using deprecated class %s of module %s*
   The class is marked as deprecated and will be removed in the future.
 :deprecated-decorator (W4905): *Using deprecated decorator %s()*
@@ -1215,6 +1254,10 @@ Typecheck checker Messages
 :unsubscriptable-object (E1136): *Value '%s' is unsubscriptable*
   Emitted when a subscripted value doesn't support subscription (i.e. doesn't
   define __getitem__ method or __class_getitem__ for a class).
+:kwarg-superseded-by-positional-arg (W1117): *%r will be included in %r since a positional-only parameter with this name already exists*
+  Emitted when a function is called with a keyword argument that has the same
+  name as a positional-only parameter and the function contains a keyword
+  variadic parameter dict.
 :keyword-arg-before-vararg (W1113): *Keyword argument before variable positional arguments list in the definition of %s function*
   When defining a keyword argument before variable positional arguments, one
   can end up in having multiple values passed for the aforementioned parameter
@@ -1308,7 +1351,7 @@ Unsupported Version checker Messages
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 :using-f-string-in-unsupported-version (W2601): *F-strings are not supported by all versions included in the py-version setting*
   Used when the py-version set by the user is lower than 3.6 and pylint
-  encounters a f-string.
+  encounters an f-string.
 :using-final-decorator-in-unsupported-version (W2602): *typing.final is not supported by all versions included in the py-version setting*
   Used when the py-version set by the user is lower than 3.8 and pylint
   encounters a ``typing.final`` decorator.
@@ -1334,6 +1377,9 @@ Variables checker Messages
   Used when an invalid (non-string) object occurs in __all__.
 :no-name-in-module (E0611): *No name %r in module %r*
   Used when a name cannot be found in a module.
+:possibly-used-before-assignment (E0606): *Possibly using variable %r before assignment*
+  Emitted when a local variable is accessed before its assignment took place in
+  both branches of an if/else switch.
 :undefined-variable (E0602): *Undefined variable %r*
   Used when an undefined variable is accessed.
 :undefined-all-variable (E0603): *Undefined variable name %r in __all__*

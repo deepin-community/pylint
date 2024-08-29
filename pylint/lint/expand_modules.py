@@ -1,13 +1,13 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 from __future__ import annotations
 
 import os
 import sys
-import warnings
 from collections.abc import Sequence
+from pathlib import Path
 from re import Pattern
 
 from astroid import modutils
@@ -22,18 +22,6 @@ def _modpath_from_file(filename: str, is_namespace: bool, path: list[str]) -> li
     return modutils.modpath_from_file_with_callback(  # type: ignore[no-any-return]
         filename, path=path, is_package_cb=_is_package_cb
     )
-
-
-def get_python_path(filepath: str) -> str:
-    # TODO: Remove deprecated function
-    warnings.warn(
-        "get_python_path has been deprecated because assumption that there's always an __init__.py "
-        "is not true since python 3.3 and is causing problems, particularly with PEP 420."
-        "Use discover_package_path and pass source root(s).",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return discover_package_path(filepath, [])
 
 
 def discover_package_path(modulepath: str, source_roots: Sequence[str]) -> str:
@@ -71,7 +59,7 @@ def _is_ignored_file(
     ignore_list_paths_re: list[Pattern[str]],
 ) -> bool:
     element = os.path.normpath(element)
-    basename = os.path.basename(element)
+    basename = Path(element).absolute().name
     return (
         basename in ignore_list
         or _is_in_ignore_list_re(basename, ignore_list_re)
@@ -101,7 +89,7 @@ def expand_modules(
         ):
             continue
         module_package_path = discover_package_path(something, source_roots)
-        additional_search_path = [".", module_package_path] + path
+        additional_search_path = [".", module_package_path, *path]
         if os.path.exists(something):
             # this is a file or a directory
             try:
@@ -157,8 +145,9 @@ def expand_modules(
         )
         if has_init or is_namespace or is_directory:
             for subfilepath in modutils.get_module_files(
-                os.path.dirname(filepath), ignore_list, list_all=is_namespace
+                os.path.dirname(filepath) or ".", ignore_list, list_all=is_namespace
             ):
+                subfilepath = os.path.normpath(subfilepath)
                 if filepath == subfilepath:
                     continue
                 if _is_in_ignore_list_re(

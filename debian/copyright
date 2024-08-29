@@ -1,6 +1,6 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: pylint
-Source: https://github.com/PyCQA/pylint
+Source: https://github.com/pylint-dev/pylint
 
 Files: *
 Copyright: Copyright (c) 2003-2017, Logilab, PyCQA and contributors

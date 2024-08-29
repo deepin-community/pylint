@@ -1,3 +1,66 @@
+pylint (3.2.6-1) unstable; urgency=medium
+
+  * New upstream version 3.2.6
+
+ -- Alexandre Detiste <tchet@debian.org>  Wed, 21 Aug 2024 12:32:33 +0200
+
+pylint (3.2.2-2) unstable; urgency=medium
+
+  * Bump pyastroid minimal required version to 3.2.x.
+
+ -- Alexandre Detiste <tchet@debian.org>  Thu, 06 Jun 2024 08:04:42 +0200
+
+pylint (3.2.2-1) unstable; urgency=medium
+
+  [routine-update]
+  * New upstream version
+  * Standards-Version: 4.7.0
+  * Reorder sequence of d/control fields by cme
+  * Set upstream metadata fields: Security-Contact.
+
+ -- Alexandre Detiste <tchet@debian.org>  Tue, 04 Jun 2024 21:32:06 +0200
+
+pylint (3.1.0-2) unstable; urgency=medium
+
+  * Adopt package (Closes: #1065241)
+  * Disable 4 syntax check failing with Python 3.12
+
+ -- Alexandre Detiste <tchet@debian.org>  Tue, 07 May 2024 08:30:17 +0200
+
+pylint (3.1.0-1) unstable; urgency=medium
+
+  * New upstream version 3.1.0 (Closes: #1066755)
+  * disable failing test to untangle astroid migration
+  * use new dh-sequence-python3
+
+ -- Alexandre Detiste <tchet@debian.org>  Fri, 26 Apr 2024 23:12:20 +0200
+
+pylint (3.0.3-2) unstable; urgency=medium
+
+  * orphan
+
+ -- Sandro Tosi <morph@debian.org>  Sat, 02 Mar 2024 02:34:39 -0500
+
+pylint (3.0.3-1) unstable; urgency=medium
+
+  [ Sandro Tosi ]
+  * New upstream release; Closes: #1058718, #1058230, #1056439
+  * stop building the -doc package, and so drop patches too
+  * debian/pylint.install
+    - delete, no longer needed
+  * debian/control
+    - add git, platformdirs to b-d, needed by tests
+    - bump deps on astroid to >= 3.0.1; Closes: #1060894
+  * update github organization from PyCQA to pylint-dev
+  * debian/rules
+    - re-enable some tests now fixed upstream
+
+  [ Nicolas Boulenguez ]
+  * debian/pylint.conffiles
+    - remove emacs script on upgrade. Closes: #1032687
+
+ -- Sandro Tosi <morph@debian.org>  Wed, 17 Jan 2024 02:11:07 -0500
+
 pylint (2.17.4-1) unstable; urgency=medium
 
   * New upstream release; Closes: #1038258

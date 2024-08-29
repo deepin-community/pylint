@@ -1,5 +1,6 @@
 abc
 abcmeta
+abspath
 abstractproperty
 analyse
 analysed
@@ -21,6 +22,7 @@ async
 asynccontextmanager
 attr
 attrib
+attrname
 backport
 BaseChecker
 basename
@@ -72,6 +74,7 @@ CVE
 cwd
 cyclomatic
 dataclass
+dataclasses
 datetime
 debian
 deduplication
@@ -93,6 +96,7 @@ dirname
 docparams
 docstring
 docstrings
+dumpable
 dunder
 elif
 elif's
@@ -132,6 +136,7 @@ globbing
 GPL
 graphname
 graphviz
+grey
 guido's
 gv
 hashable
@@ -256,10 +261,12 @@ proc
 py
 pyenchant
 pyfile
+pyi
 pylint
 pylintdict
 pylintrc
 pylint's
+pyproject
 pypy
 pyreverse
 pytest
@@ -293,6 +300,7 @@ spammy
 sqlalchemy
 src
 starargs
+stateful
 staticmethod
 stderr
 stdin
@@ -317,6 +325,8 @@ subtree
 supcls
 superclass
 symilar
+symlink
+symlinks
 sys
 tbump
 tempfile
@@ -326,6 +336,7 @@ testoptions
 tmp
 tokencheckers
 tokeninfo
+tokenization
 tokenize
 tokenizer
 toml
@@ -353,6 +364,7 @@ unicode
 Uninferable
 uninferable
 unittest
+unraisablehook
 untriggered
 # prefix for string
 ur

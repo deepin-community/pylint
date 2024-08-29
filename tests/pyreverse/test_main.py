@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """Unittest for the main module."""
 
@@ -59,7 +59,7 @@ def setup_path(request: SubRequest) -> Iterator[None]:
 @pytest.mark.usefixtures("setup_path")
 def test_project_root_in_sys_path() -> None:
     """Test the context manager adds the project root directory to sys.path.
-    This should happen when pyreverse is run from any directory
+    This should happen when pyreverse is run from any directory.
     """
     with augmented_sys_path([discover_package_path(TEST_DATA_DIR, [])]):
         assert sys.path == [PROJECT_ROOT_DIR]
@@ -128,6 +128,18 @@ def test_graphviz_unsupported_image_format(capsys: CaptureFixture) -> None:
     assert wrapped_sysexit.value.code == 32
 
 
+@mock.patch("pylint.pyreverse.main.Linker", new=mock.MagicMock())
+@mock.patch("pylint.pyreverse.main.DiadefsHandler", new=mock.MagicMock())
+@mock.patch("pylint.pyreverse.main.writer")
+@pytest.mark.usefixtures("mock_graphviz")
+def test_verbose(_: mock.MagicMock, capsys: CaptureFixture[str]) -> None:
+    """Test the --verbose flag."""
+    with pytest.raises(SystemExit):
+        # we have to catch the SystemExit so the test execution does not stop
+        main.Run(["--verbose", TEST_DATA_DIR])
+    assert "parsing" in capsys.readouterr().out
+
+
 @pytest.mark.parametrize(
     ("arg", "expected_default"),
     [
@@ -138,6 +150,7 @@ def test_graphviz_unsupported_image_format(capsys: CaptureFixture) -> None:
         ("show_associated", None),
         ("all_associated", None),
         ("show_builtin", 0),
+        ("show_stdlib", 0),
         ("module_names", None),
         ("output_format", "dot"),
         ("colorized", 0),

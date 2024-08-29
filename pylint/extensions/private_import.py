@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """Check for imports on private external modules and names."""
 
@@ -166,9 +166,9 @@ class PrivateImportChecker(BaseChecker):
                     )
             if private_name is not None:
                 # Found a new private annotation, make sure we are not accessing it elsewhere
-                all_used_type_annotations[
-                    private_name
-                ] = self._assignments_call_private_name(name_assignments, private_name)
+                all_used_type_annotations[private_name] = (
+                    self._assignments_call_private_name(name_assignments, private_name)
+                )
 
     def _populate_type_annotations_function(
         self, node: nodes.FunctionDef, all_used_type_annotations: dict[str, bool]

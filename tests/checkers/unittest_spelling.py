@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """Unittest for the spelling checker."""
 
@@ -335,7 +335,8 @@ class TestSpellingChecker(CheckerTestCase):  # pylint:disable=too-many-public-me
     )
     def test_tool_directives_handling(self, prefix: str, suffix: str) -> None:
         """We're not raising when the directive is at the beginning of comments,
-        but we raise if a directive appears later in comment."""
+        but we raise if a directive appears later in comment.
+        """
         full_comment = f"# {prefix}{suffix} {prefix}"
         args = (
             prefix,

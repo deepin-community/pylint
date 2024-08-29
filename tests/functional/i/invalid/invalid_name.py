@@ -29,8 +29,12 @@ def test():
         re = None
     return re
 
-def a(): # [invalid-name]
-    """yo"""
+def a():
+    """We no longer fail 1-character names by default."""
+
+
+def A():  # [invalid-name]
+    """But we do check casing."""
 
 
 def _generate_cmdline_tests():
@@ -98,3 +102,10 @@ class FooBar:
         """Invalid-name will still be raised for other arguments."""
         self.foo_bar = fooBar
         self.foo_bar2 = fooBar2
+
+    def tearDown(self): ...  # pylint: disable=invalid-name
+
+
+class FooBarSubclass(FooBar):
+    tearDown = FooBar.tearDown
+    tearDownNotInAncestor = None  # [invalid-name]

@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 from __future__ import annotations
 
@@ -29,9 +29,10 @@ def colorized_dot_config() -> PyreverseConfig:
 
 
 @pytest.fixture()
-def vcg_config() -> PyreverseConfig:
+def no_standalone_dot_config() -> PyreverseConfig:
     return PyreverseConfig(
-        output_format="vcg",
+        output_format="dot",
+        no_standalone=True,
     )
 
 
@@ -71,7 +72,9 @@ def get_project() -> GetProjectCallable:
     def _get_project(module: str, name: str | None = "No Name") -> Project:
         """Return an astroid project representation."""
 
-        def _astroid_wrapper(func: Callable[[str], Module], modname: str) -> Module:
+        def _astroid_wrapper(
+            func: Callable[[str], Module], modname: str, _verbose: bool = False
+        ) -> Module:
             return func(modname)
 
         with augmented_sys_path([discover_package_path(module, [])]):

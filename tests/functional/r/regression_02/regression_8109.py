@@ -1,4 +1,4 @@
-"""Regression test for https://github.com/PyCQA/pylint/issues/8109."""
+"""Regression test for https://github.com/pylint-dev/pylint/issues/8109."""
 
 # pylint: disable=missing-docstring, unsupported-binary-operation
 
@@ -11,5 +11,5 @@ class Number:
     round: int = 2
 
     def __str__(self):
-        number_format = "{:,.%sf}" % self.round  # [consider-using-f-string]
+        number_format = "{:,.%sf}" % self.round
         return number_format.format(self.amount).rstrip("0").rstrip(".")

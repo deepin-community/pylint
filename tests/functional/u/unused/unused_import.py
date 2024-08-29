@@ -100,12 +100,12 @@ if TYPE_CHECKING:
 
 
 class WithMetaclass(six.with_metaclass(ABCMeta)):
-    """Regression test for https://github.com/PyCQA/pylint/issues/7506.
+    """Regression test for https://github.com/pylint-dev/pylint/issues/7506.
 
     Requires six."""
 
 
-# Regression test for https://github.com/PyCQA/pylint/issues/3765
+# Regression test for https://github.com/pylint-dev/pylint/issues/3765
 # `unused-import` should not be emitted when a type annotation uses quotation marks
 from typing import List
 
