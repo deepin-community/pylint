@@ -1,18 +1,12 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 from __future__ import annotations
 
-import sys
-from typing import cast
+from typing import Literal, TypedDict, cast
 
 from pylint.typing import MessageTypesFullName
-
-if sys.version_info >= (3, 8):
-    from typing import Literal, TypedDict
-else:
-    from typing_extensions import Literal, TypedDict
 
 
 class BadNames(TypedDict):
@@ -298,9 +292,11 @@ class LinterStats:
         """Get a global message count."""
         return getattr(self, type_name, 0)
 
-    def get_module_message_count(self, modname: str, type_name: str) -> int:
+    def get_module_message_count(
+        self, modname: str, type_name: MessageTypesFullName
+    ) -> int:
         """Get a module message count."""
-        return getattr(self.by_module[modname], type_name, 0)
+        return self.by_module[modname].get(type_name, 0)
 
     def increase_single_message_count(self, type_name: str, increase: int) -> None:
         """Increase the message type count of an individual message type."""

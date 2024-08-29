@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """This launches the configuration functional tests. This permits to test configuration
 files by providing a file with the appropriate extension in the ``tests/config/functional``
@@ -43,6 +43,11 @@ CONFIGURATION_PATHS = [
     str(path.relative_to(FUNCTIONAL_DIR))
     for ext in ACCEPTED_CONFIGURATION_EXTENSIONS
     for path in FUNCTIONAL_DIR.rglob(f"*.{ext}")
+    if (str_path := str(path))
+    # The enable/disable all tests are not practical with this framework.
+    # They require manually listing ~400 messages, which will
+    # require constant updates.
+    and "enable_all" not in str_path and "disable_all" not in str_path
 ]
 
 

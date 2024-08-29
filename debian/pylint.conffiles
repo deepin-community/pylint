@@ -1,0 +1,1 @@
+remove-on-upgrade /etc/emacs/site-start.d/50pylint.el

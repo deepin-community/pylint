@@ -1,5 +1,6 @@
 ---
-Bug-Database: https://github.com/PyCQA/pylint/issues
-Bug-Submit: https://github.com/PyCQA/pylint/issues/new
-Repository: https://github.com/PyCQA/pylint.git
-Repository-Browse: https://github.com/PyCQA/pylint
+Bug-Database: https://github.com/pylint-dev/pylint/issues
+Bug-Submit: https://github.com/pylint-dev/pylint/issues/new
+Repository: https://github.com/pylint-dev/pylint.git
+Repository-Browse: https://github.com/pylint-dev/pylint
+Security-Contact: https://github.com/pylint-dev/pylint/tree/HEAD/.github/SECURITY.md

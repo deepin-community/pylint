@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """Python code format's checker.
 
@@ -13,11 +13,10 @@ Some parts of the process_token method is based from The Tab Nanny std module.
 
 from __future__ import annotations
 
-import sys
 import tokenize
 from functools import reduce
 from re import Match
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from astroid import nodes
 
@@ -31,10 +30,6 @@ from pylint.utils.pragma_parser import OPTION_PO, PragmaParserError, parse_pragm
 if TYPE_CHECKING:
     from pylint.lint import PyLinter
 
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
 
 _KEYWORD_TOKENS = {
     "assert",
@@ -346,7 +341,7 @@ class FormatChecker(BaseTokenChecker, BaseRawFileChecker):
                     if found_and_or:
                         return
                     if keyword_token == "in":
-                        # This special case was added in https://github.com/PyCQA/pylint/pull/4948
+                        # This special case was added in https://github.com/pylint-dev/pylint/pull/4948
                         # but it could be removed in the future. Avoid churn for now.
                         return
                     self.add_message(
@@ -501,18 +496,10 @@ class FormatChecker(BaseTokenChecker, BaseRawFileChecker):
         prev_sibl = node.previous_sibling()
         if prev_sibl is not None:
             prev_line = prev_sibl.fromlineno
-        # The line on which a 'finally': occurs in a 'try/finally'
-        # is not directly represented in the AST. We infer it
-        # by taking the last line of the body and adding 1, which
-        # should be the line of finally:
-        elif (
-            isinstance(node.parent, nodes.TryFinally) and node in node.parent.finalbody
-        ):
-            prev_line = node.parent.body[0].tolineno + 1
         elif isinstance(node.parent, nodes.Module):
             prev_line = 0
         else:
-            prev_line = node.parent.statement(future=True).fromlineno
+            prev_line = node.parent.statement().fromlineno
         line = node.fromlineno
         assert line, node
         if prev_line == line and self._visited_lines.get(line) != 2:
@@ -535,15 +522,8 @@ class FormatChecker(BaseTokenChecker, BaseRawFileChecker):
 
     def _check_multi_statement_line(self, node: nodes.NodeNG, line: int) -> None:
         """Check for lines containing multiple statements."""
-        # Do not warn about multiple nested context managers
-        # in with statements.
         if isinstance(node, nodes.With):
-            return
-        # For try... except... finally..., the two nodes
-        # appear to be on the same line due to how the AST is built.
-        if isinstance(node, nodes.TryExcept) and isinstance(
-            node.parent, nodes.TryFinally
-        ):
+            # Do not warn about multiple nested context managers in with statements.
             return
         if (
             isinstance(node.parent, nodes.If)
@@ -558,16 +538,16 @@ class FormatChecker(BaseTokenChecker, BaseRawFileChecker):
         ):
             return
 
-        # Functions stubs with ``Ellipsis`` as body are exempted.
+        # Functions stubs and class with ``Ellipsis`` as body are exempted.
         if (
-            isinstance(node.parent, nodes.FunctionDef)
-            and isinstance(node, nodes.Expr)
+            isinstance(node, nodes.Expr)
+            and isinstance(node.parent, (nodes.FunctionDef, nodes.ClassDef))
             and isinstance(node.value, nodes.Const)
             and node.value.value is Ellipsis
         ):
             return
 
-        self.add_message("multiple-statements", node=node)
+        self.add_message("multiple-statements", node=node, confidence=HIGH)
         self._visited_lines[line] = 2
 
     def check_trailing_whitespace_ending(self, line: str, i: int) -> None:
@@ -667,8 +647,8 @@ class FormatChecker(BaseTokenChecker, BaseRawFileChecker):
                 self.add_message("missing-final-newline", line=lineno + offset)
                 continue
             # We don't test for trailing whitespaces in strings
-            # See https://github.com/PyCQA/pylint/issues/6936
-            # and https://github.com/PyCQA/pylint/issues/3822
+            # See https://github.com/pylint-dev/pylint/issues/6936
+            # and https://github.com/pylint-dev/pylint/issues/3822
             if tokens.type(line_start) != tokenize.STRING:
                 self.check_trailing_whitespace_ending(line, lineno + offset)
 

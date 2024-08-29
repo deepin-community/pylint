@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """Checkers for various standard library functions."""
 
@@ -16,7 +16,7 @@ from astroid.typing import InferenceResult
 
 from pylint import interfaces
 from pylint.checkers import BaseChecker, DeprecatedMixin, utils
-from pylint.interfaces import INFERENCE
+from pylint.interfaces import HIGH, INFERENCE
 from pylint.typing import MessageDefinitionTuple
 
 if TYPE_CHECKING:
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 DeprecationDict = Dict[Tuple[int, int, int], Set[str]]
 
 OPEN_FILES_MODE = ("open", "file")
-OPEN_FILES_FUNCS = OPEN_FILES_MODE + ("read_text", "write_text")
+OPEN_FILES_FUNCS = (*OPEN_FILES_MODE, "read_text", "write_text")
 UNITTEST_CASE = "unittest.case"
 THREADING_THREAD = "threading.Thread"
 COPY_COPY = "copy.copy"
@@ -83,6 +83,12 @@ DEPRECATED_ARGUMENTS: dict[
         ),
     },
     (3, 9, 0): {"random.Random.shuffle": ((1, "random"),)},
+    (3, 12, 0): {
+        "argparse.BooleanOptionalAction": ((3, "type"), (4, "choices"), (7, "metavar")),
+        "coroutine.throw": ((1, "value"), (2, "traceback")),
+        "email.utils.localtime": ((1, "isdst"),),
+        "shutil.rmtree": ((2, "onerror"),),
+    },
 }
 
 DEPRECATED_DECORATORS: DeprecationDict = {
@@ -224,6 +230,13 @@ DEPRECATED_METHODS: dict[int, DeprecationDict] = {
             "binascii.a2b_hqx",
             "binascii.rlecode_hqx",
             "binascii.rledecode_hqx",
+            "importlib.resources.contents",
+            "importlib.resources.is_resource",
+            "importlib.resources.open_binary",
+            "importlib.resources.open_text",
+            "importlib.resources.path",
+            "importlib.resources.read_binary",
+            "importlib.resources.read_text",
         },
         (3, 10, 0): {
             "_sqlite3.enable_shared_cache",
@@ -252,6 +265,17 @@ DEPRECATED_METHODS: dict[int, DeprecationDict] = {
             "unittest.TestLoader.loadTestsFromModule",
             "unittest.TestLoader.loadTestsFromTestCase",
             "unittest.TestLoader.getTestCaseNames",
+            "unittest.TestProgram.usageExit",
+        },
+        (3, 12, 0): {
+            "builtins.bool.__invert__",
+            "datetime.datetime.utcfromtimestamp",
+            "datetime.datetime.utcnow",
+            "pkgutil.find_loader",
+            "pkgutil.get_loader",
+            "pty.master_open",
+            "pty.slave_open",
+            "xml.etree.ElementTree.Element.__bool__",
         },
     },
 }
@@ -313,6 +337,48 @@ DEPRECATED_CLASSES: dict[tuple[int, int, int], dict[str, set[str]]] = {
             "MacOSX",
         },
     },
+    (3, 12, 0): {
+        "ast": {
+            "Bytes",
+            "Ellipsis",
+            "NameConstant",
+            "Num",
+            "Str",
+        },
+        "asyncio": {
+            "AbstractChildWatcher",
+            "MultiLoopChildWatcher",
+            "FastChildWatcher",
+            "SafeChildWatcher",
+        },
+        "collections.abc": {
+            "ByteString",
+        },
+        "importlib.abc": {
+            "ResourceReader",
+            "Traversable",
+            "TraversableResources",
+        },
+        "typing": {
+            "ByteString",
+            "Hashable",
+            "Sized",
+        },
+    },
+}
+
+
+DEPRECATED_ATTRIBUTES: DeprecationDict = {
+    (3, 2, 0): {
+        "configparser.ParsingError.filename",
+    },
+    (3, 12, 0): {
+        "calendar.January",
+        "calendar.February",
+        "sys.last_traceback",
+        "sys.last_type",
+        "sys.last_value",
+    },
 }
 
 
@@ -354,6 +420,7 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
         **DeprecatedMixin.DEPRECATED_ARGUMENT_MESSAGE,
         **DeprecatedMixin.DEPRECATED_CLASS_MESSAGE,
         **DeprecatedMixin.DEPRECATED_DECORATOR_MESSAGE,
+        **DeprecatedMixin.DEPRECATED_ATTRIBUTE_MESSAGE,
         "W1501": (
             '"%s" is not a valid mode for open.',
             "bad-open-mode",
@@ -473,6 +540,7 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
         self._deprecated_arguments: dict[str, tuple[tuple[int | None, str], ...]] = {}
         self._deprecated_classes: dict[str, set[str]] = {}
         self._deprecated_decorators: set[str] = set()
+        self._deprecated_attributes: set[str] = set()
 
         for since_vers, func_list in DEPRECATED_METHODS[sys.version_info[0]].items():
             if since_vers <= sys.version_info:
@@ -486,6 +554,9 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
         for since_vers, decorator_list in DEPRECATED_DECORATORS.items():
             if since_vers <= sys.version_info:
                 self._deprecated_decorators.update(decorator_list)
+        for since_vers, attribute_list in DEPRECATED_ATTRIBUTES.items():
+            if since_vers <= sys.version_info:
+                self._deprecated_attributes.update(attribute_list)
         # Modules are checked by the ImportsChecker, because the list is
         # synced with the config argument deprecated-modules
 
@@ -511,14 +582,23 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
             self.add_message("subprocess-run-check", node=node, confidence=INFERENCE)
 
     def _check_shallow_copy_environ(self, node: nodes.Call) -> None:
-        arg = utils.get_argument_from_call(node, position=0)
+        confidence = HIGH
+        try:
+            arg = utils.get_argument_from_call(node, position=0, keyword="x")
+        except utils.NoSuchArgumentError:
+            arg = utils.infer_kwarg_from_call(node, keyword="x")
+            if not arg:
+                return
+            confidence = INFERENCE
         try:
             inferred_args = arg.inferred()
         except astroid.InferenceError:
             return
         for inferred in inferred_args:
             if inferred.qname() == OS_ENVIRON:
-                self.add_message("shallow-copy-environ", node=node)
+                self.add_message(
+                    "shallow-copy-environ", node=node, confidence=confidence
+                )
                 break
 
     @utils.only_required_for_messages(
@@ -593,8 +673,9 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
         "singledispatchmethod-function",
     )
     def visit_functiondef(self, node: nodes.FunctionDef) -> None:
-        if node.decorators and isinstance(node.parent, nodes.ClassDef):
-            self._check_lru_cache_decorators(node)
+        if node.decorators:
+            if isinstance(node.parent, nodes.ClassDef):
+                self._check_lru_cache_decorators(node)
             self._check_dispatch_decorators(node)
 
     def _check_lru_cache_decorators(self, node: nodes.FunctionDef) -> None:
@@ -619,7 +700,7 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
                                 d_node, position=0, keyword="maxsize"
                             )
                         except utils.NoSuchArgumentError:
-                            break
+                            arg = utils.infer_kwarg_from_call(d_node, "maxsize")
 
                         if not isinstance(arg, nodes.Const) or arg.value is not None:
                             break
@@ -653,16 +734,14 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
                     interfaces.INFERENCE,
                 )
 
-        if "singledispatch" in decorators_map and "classmethod" in decorators_map:
-            self.add_message(
-                "singledispatch-method",
-                node=decorators_map["singledispatch"][0],
-                confidence=decorators_map["singledispatch"][1],
-            )
-        elif (
-            "singledispatchmethod" in decorators_map
-            and "staticmethod" in decorators_map
-        ):
+        if node.is_method():
+            if "singledispatch" in decorators_map:
+                self.add_message(
+                    "singledispatch-method",
+                    node=decorators_map["singledispatch"][0],
+                    confidence=decorators_map["singledispatch"][1],
+                )
+        elif "singledispatchmethod" in decorators_map:
             self.add_message(
                 "singledispatchmethod-function",
                 node=decorators_map["singledispatchmethod"][0],
@@ -688,10 +767,10 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
             inferred = next(node.infer())
         except astroid.InferenceError:
             return
-        if (
-            isinstance(inferred, astroid.Instance)
-            and inferred.qname() == "datetime.time"
-        ):
+        if isinstance(inferred, astroid.Instance) and inferred.qname() in {
+            "_pydatetime.time",
+            "datetime.time",
+        }:
             self.add_message("boolean-datetime", node=node)
 
     def _check_open_call(
@@ -699,6 +778,7 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
     ) -> None:
         """Various checks for an open call."""
         mode_arg = None
+        confidence = HIGH
         try:
             if open_module == "_io":
                 mode_arg = utils.get_argument_from_call(
@@ -709,11 +789,12 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
                     node, position=0, keyword="mode"
                 )
         except utils.NoSuchArgumentError:
-            pass
+            mode_arg = utils.infer_kwarg_from_call(node, keyword="mode")
+            if mode_arg:
+                confidence = INFERENCE
 
         if mode_arg:
             mode_arg = utils.safe_infer(mode_arg)
-
             if (
                 func_name in OPEN_FILES_MODE
                 and isinstance(mode_arg, nodes.Const)
@@ -723,6 +804,7 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
                     "bad-open-mode",
                     node=node,
                     args=mode_arg.value or str(mode_arg.value),
+                    confidence=confidence,
                 )
 
         if (
@@ -730,7 +812,7 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
             or isinstance(mode_arg, nodes.Const)
             and (not mode_arg.value or "b" not in str(mode_arg.value))
         ):
-            encoding_arg = None
+            confidence = HIGH
             try:
                 if open_module == "pathlib":
                     if node.func.attrname == "read_text":
@@ -750,13 +832,21 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
                         node, position=3, keyword="encoding"
                     )
             except utils.NoSuchArgumentError:
-                self.add_message("unspecified-encoding", node=node)
+                encoding_arg = utils.infer_kwarg_from_call(node, keyword="encoding")
+                if encoding_arg:
+                    confidence = INFERENCE
+                else:
+                    self.add_message(
+                        "unspecified-encoding", node=node, confidence=confidence
+                    )
 
             if encoding_arg:
                 encoding_arg = utils.safe_infer(encoding_arg)
 
                 if isinstance(encoding_arg, nodes.Const) and encoding_arg.value is None:
-                    self.add_message("unspecified-encoding", node=node)
+                    self.add_message(
+                        "unspecified-encoding", node=node, confidence=confidence
+                    )
 
     def _check_env_function(self, node: nodes.Call, infer: nodes.FunctionDef) -> None:
         env_name_kwarg = "key"
@@ -831,6 +921,9 @@ class StdlibChecker(DeprecatedMixin, BaseChecker):
 
     def deprecated_decorators(self) -> Iterable[str]:
         return self._deprecated_decorators
+
+    def deprecated_attributes(self) -> Iterable[str]:
+        return self._deprecated_attributes
 
 
 def register(linter: PyLinter) -> None:

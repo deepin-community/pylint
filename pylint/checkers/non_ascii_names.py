@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """All alphanumeric unicode character are allowed in Python but due
 to similarities in how they look they can be confused.
@@ -65,7 +65,6 @@ class NonAsciiNameChecker(base_checker.BaseChecker):
 
     def _check_name(self, node_type: str, name: str | None, node: nodes.NodeNG) -> None:
         """Check whether a name is using non-ASCII characters."""
-
         if name is None:
             # For some nodes i.e. *kwargs from a dict, the name will be empty
             return

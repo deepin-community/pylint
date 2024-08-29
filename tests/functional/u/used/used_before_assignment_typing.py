@@ -7,11 +7,12 @@ from typing import List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     if True:  # pylint: disable=using-constant-test
         import math
+    import dbm
+    print(dbm)  # no error when defined and used in the same false branch
     from urllib.request import urlopen
     import array
     import base64
     import binascii
-    import bisect
     import calendar
     import collections
     import copy
@@ -91,7 +92,7 @@ class MyClass:
 
 class MySecondClass:
     """Class to test self referential variable typing.
-    This regressed, reported in: https://github.com/PyCQA/pylint/issues/5342
+    This regressed, reported in: https://github.com/pylint-dev/pylint/issues/5342
     """
 
     def self_referential_optional_within_method(self) -> None:
@@ -121,7 +122,7 @@ class MyOtherClass:
 
 class MyThirdClass:
     """Class to test self referential variable typing within conditionals.
-    This regressed, reported in: https://github.com/PyCQA/pylint/issues/5499
+    This regressed, reported in: https://github.com/pylint-dev/pylint/issues/5499
     """
 
     def function(self, var: int) -> None:
@@ -134,7 +135,7 @@ class MyThirdClass:
 
 class MyFourthClass:  # pylint: disable=too-few-public-methods
     """Class to test conditional imports guarded by TYPE_CHECKING two levels
-    up then used in function annotation. See https://github.com/PyCQA/pylint/issues/7539"""
+    up then used in function annotation. See https://github.com/pylint-dev/pylint/issues/7539"""
 
     def is_close(self, comparator: math.isclose, first, second):  # [used-before-assignment]
         """Conditional imports guarded are only valid for variable annotations."""
@@ -145,8 +146,8 @@ class VariableAnnotationsGuardedByTypeChecking:  # pylint: disable=too-few-publi
     """Class to test conditional imports guarded by TYPE_CHECKING then used in
     local (function) variable annotations, which are not evaluated at runtime.
 
-    See: https://github.com/PyCQA/pylint/issues/7609
-    and https://github.com/PyCQA/pylint/issues/7882
+    See: https://github.com/pylint-dev/pylint/issues/7609
+    and https://github.com/pylint-dev/pylint/issues/7882
     """
 
     still_an_error: datetime.date  # [used-before-assignment]
@@ -166,32 +167,32 @@ class ConditionalImportGuardedWhenUsed:  # pylint: disable=too-few-public-method
 
 class TypeCheckingMultiBranch:  # pylint: disable=too-few-public-methods,unused-variable
     """Test for defines in TYPE_CHECKING if/elif/else branching"""
-    def defined_in_elif_branch(self) -> calendar.Calendar:
-        print(bisect)
+    def defined_in_elif_branch(self) -> calendar.Calendar:  # [possibly-used-before-assignment]
+        print(bisect)  # [possibly-used-before-assignment]
         return calendar.Calendar()
 
     def defined_in_else_branch(self) -> urlopen:
-        print(zoneinfo)
+        print(zoneinfo)  # [used-before-assignment]
         print(pprint())
         print(collections())
         return urlopen
 
-    def defined_in_nested_if_else(self) -> heapq:
+    def defined_in_nested_if_else(self) -> heapq:  # [possibly-used-before-assignment]
         print(heapq)
         return heapq
 
-    def defined_in_try_except(self) -> array:
-        print(types)
-        print(copy)
-        print(numbers)
+    def defined_in_try_except(self) -> array:  # [used-before-assignment]
+        print(types)  # [used-before-assignment]
+        print(copy)  # [used-before-assignment]
+        print(numbers)  # [used-before-assignment]
         return array
 
-    def defined_in_loops(self) -> json:
-        print(email)
-        print(mailbox)
-        print(mimetypes)
+    def defined_in_loops(self) -> json:  # [used-before-assignment]
+        print(email)  # [used-before-assignment]
+        print(mailbox)  # [used-before-assignment]
+        print(mimetypes)  # [used-before-assignment]
         return json
 
-    def defined_in_with(self) -> base64:
-        print(binascii)
+    def defined_in_with(self) -> base64:  # [used-before-assignment]
+        print(binascii)  # [used-before-assignment]
         return base64

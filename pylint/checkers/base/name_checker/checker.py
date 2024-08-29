@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """Basic checker for Python code."""
 
@@ -60,6 +60,7 @@ class TypeVarVariance(Enum):
     covariant = auto()
     contravariant = auto()
     double_variant = auto()
+    inferred = auto()
 
 
 def _get_properties(config: argparse.Namespace) -> tuple[set[str], set[str]]:
@@ -334,9 +335,9 @@ class NameChecker(_BasicChecker):
         for all_groups in self._bad_names.values():
             if len(all_groups) < 2:
                 continue
-            groups: collections.defaultdict[
-                int, list[list[_BadNamesTuple]]
-            ] = collections.defaultdict(list)
+            groups: collections.defaultdict[int, list[list[_BadNamesTuple]]] = (
+                collections.defaultdict(list)
+            )
             min_warnings = sys.maxsize
             prevalent_group, _ = max(all_groups.items(), key=lambda item: len(item[1]))
             for group in all_groups.values():
@@ -345,7 +346,7 @@ class NameChecker(_BasicChecker):
             if len(groups[min_warnings]) > 1:
                 by_line = sorted(
                     groups[min_warnings],
-                    key=lambda group: min(  # type: ignore[no-any-return]
+                    key=lambda group: min(
                         warning[0].lineno
                         for warning in group
                         if warning[0].lineno is not None
@@ -370,11 +371,11 @@ class NameChecker(_BasicChecker):
         # of a base class method.
         confidence = interfaces.HIGH
         if node.is_method():
-            if utils.overrides_a_method(node.parent.frame(future=True), node.name):
+            if utils.overrides_a_method(node.parent.frame(), node.name):
                 return
             confidence = (
                 interfaces.INFERENCE
-                if utils.has_known_bases(node.parent.frame(future=True))
+                if utils.has_known_bases(node.parent.frame())
                 else interfaces.INFERENCE_FAILURE
             )
 
@@ -402,12 +403,18 @@ class NameChecker(_BasicChecker):
         self, node: nodes.AssignName
     ) -> None:
         """Check module level assigned names."""
-        frame = node.frame(future=True)
+        frame = node.frame()
         assign_type = node.assign_type()
 
         # Check names defined in comprehensions
         if isinstance(assign_type, nodes.Comprehension):
             self._check_name("inlinevar", node.name, node)
+
+        elif isinstance(assign_type, nodes.TypeVar):
+            self._check_name("typevar", node.name, node)
+
+        elif isinstance(assign_type, nodes.TypeAlias):
+            self._check_name("typealias", node.name, node)
 
         # Check names defined in module scope
         elif isinstance(frame, nodes.Module):
@@ -476,19 +483,23 @@ class NameChecker(_BasicChecker):
             # global introduced variable aren't in the function locals
             if node.name in frame and node.name not in frame.argnames():
                 if not _redefines_import(node):
-                    self._check_name("variable", node.name, node)
+                    if isinstance(
+                        assign_type, nodes.AnnAssign
+                    ) and self._assigns_typealias(assign_type.annotation):
+                        self._check_name("typealias", node.name, node)
+                    else:
+                        self._check_name("variable", node.name, node)
 
         # Check names defined in class scopes
-        elif isinstance(frame, nodes.ClassDef):
-            if not list(frame.local_attr_ancestors(node.name)):
-                for ancestor in frame.ancestors():
-                    if utils.is_enum(ancestor) or utils.is_assign_name_annotated_with(
-                        node, "Final"
-                    ):
-                        self._check_name("class_const", node.name, node)
-                        break
-                else:
-                    self._check_name("class_attribute", node.name, node)
+        elif isinstance(frame, nodes.ClassDef) and not any(
+            frame.local_attr_ancestors(node.name)
+        ):
+            if utils.is_enum_member(node) or utils.is_assign_name_annotated_with(
+                node, "Final"
+            ):
+                self._check_name("class_const", node.name, node)
+            else:
+                self._check_name("class_attribute", node.name, node)
 
     def _recursive_check_names(self, args: list[nodes.AssignName]) -> None:
         """Check names in a possibly recursive list <arg>."""
@@ -598,18 +609,24 @@ class NameChecker(_BasicChecker):
         """Check if a node is assigning a TypeAlias."""
         inferred = utils.safe_infer(node)
         if isinstance(inferred, nodes.ClassDef):
-            if inferred.qname() == ".Union":
+            qname = inferred.qname()
+            if qname == "typing.TypeAlias":
+                return True
+            if qname == ".Union":
                 # Union is a special case because it can be used as a type alias
                 # or as a type annotation. We only want to check the former.
                 assert node is not None
                 return not isinstance(node.parent, nodes.AnnAssign)
         elif isinstance(inferred, nodes.FunctionDef):
+            # TODO: when py3.12 is minimum, remove this condition
+            # TypeAlias became a class in python 3.12
             if inferred.qname() == "typing.TypeAlias":
                 return True
         return False
 
     def _check_typevar(self, name: str, node: nodes.AssignName) -> None:
         """Check for TypeVar lint violations."""
+        variance: TypeVarVariance = TypeVarVariance.invariant
         if isinstance(node.parent, nodes.Assign):
             keywords = node.assign_type().value.keywords
             args = node.assign_type().value.args
@@ -618,8 +635,11 @@ class NameChecker(_BasicChecker):
                 node.assign_type().value.elts[node.parent.elts.index(node)].keywords
             )
             args = node.assign_type().value.elts[node.parent.elts.index(node)].args
+        else:  # PEP 695 generic type nodes
+            keywords = ()
+            args = ()
+            variance = TypeVarVariance.inferred
 
-        variance = TypeVarVariance.invariant
         name_arg = None
         for kw in keywords:
             if variance == TypeVarVariance.double_variant:
@@ -643,7 +663,12 @@ class NameChecker(_BasicChecker):
         if name_arg is None and args and isinstance(args[0], nodes.Const):
             name_arg = args[0].value
 
-        if variance == TypeVarVariance.double_variant:
+        if variance == TypeVarVariance.inferred:
+            # Ignore variance check for PEP 695 type parameters.
+            # The variance is inferred by the type checker.
+            # Adding _co or _contra suffix can help to reason about TypeVar.
+            pass
+        elif variance == TypeVarVariance.double_variant:
             self.add_message(
                 "typevar-double-variance",
                 node=node,
@@ -672,7 +697,7 @@ class NameChecker(_BasicChecker):
                 confidence=interfaces.INFERENCE,
             )
         elif variance == TypeVarVariance.invariant and (
-            name.endswith("_co") or name.endswith("_contra")
+            name.endswith(("_co", "_contra"))
         ):
             suggest_name = re.sub("_contra$|_co$", "", name)
             self.add_message(

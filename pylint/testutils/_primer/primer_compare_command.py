@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 from __future__ import annotations
 
 import json
@@ -18,8 +18,24 @@ MAX_GITHUB_COMMENT_LENGTH = 65536
 
 class CompareCommand(PrimerCommand):
     def run(self) -> None:
-        main_data = self._load_json(self.config.base_file)
-        pr_data = self._load_json(self.config.new_file)
+        if self.config.batches is None:
+            main_data = self._load_json(self.config.base_file)
+            pr_data = self._load_json(self.config.new_file)
+        else:
+            main_data = {}
+            pr_data = {}
+            for idx in range(self.config.batches):
+                main_data.update(
+                    self._load_json(
+                        self.config.base_file.replace("BATCHIDX", "batch" + str(idx))
+                    )
+                )
+                pr_data.update(
+                    self._load_json(
+                        self.config.new_file.replace("BATCHIDX", "batch" + str(idx))
+                    )
+                )
+
         missing_messages_data, new_messages_data = self._cross_reference(
             main_data, pr_data
         )

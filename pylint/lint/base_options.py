@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """Functions that creates the basic options for the Run and PyLinter classes."""
 
@@ -102,9 +102,10 @@ def _make_linter_options(linter: PyLinter) -> Options:
                 "metavar": "<format>",
                 "short": "f",
                 "group": "Reports",
-                "help": "Set the output format. Available formats are text,"
-                " parseable, colorized, json and msvs (visual studio)."
-                " You can also give a reporter class, e.g. mypackage.mymodule."
+                "help": "Set the output format. Available formats are: text, "
+                "parseable, colorized, json2 (improved json format), json "
+                "(old json format) and msvs (visual studio). "
+                "You can also give a reporter class, e.g. mypackage.mymodule."
                 "MyReporterClass.",
                 "kwargs": {"linter": linter},
             },
@@ -383,7 +384,8 @@ def _make_linter_options(linter: PyLinter) -> Options:
                 "type": "csv",
                 "metavar": "<module names>",
                 "help": "List of module names for which member attributes "
-                "should not be checked (useful for modules/projects "
+                "should not be checked and will not be imported "
+                "(useful for modules/projects "
                 "where namespaces are manipulated during runtime and "
                 "thus existing member attributes cannot be "
                 "deduced by static analysis). It supports qualified "
@@ -411,6 +413,17 @@ def _make_linter_options(linter: PyLinter) -> Options:
                 "metavar": "<y or n>",
                 "help": "Clear in-memory caches upon conclusion of linting. "
                 "Useful if running pylint in a server-like mode.",
+            },
+        ),
+        (
+            "prefer-stubs",
+            {
+                "default": False,
+                "type": "yn",
+                "metavar": "<y or n>",
+                "help": "Resolve imports to .pyi stubs if available. May "
+                "reduce no-member messages and increase not-an-iterable "
+                "messages.",
             },
         ),
     )

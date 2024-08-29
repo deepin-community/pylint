@@ -1,6 +1,6 @@
 # Licensed under the GPL: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
-# For details: https://github.com/PyCQA/pylint/blob/main/LICENSE
-# Copyright (c) https://github.com/PyCQA/pylint/blob/main/CONTRIBUTORS.txt
+# For details: https://github.com/pylint-dev/pylint/blob/main/LICENSE
+# Copyright (c) https://github.com/pylint-dev/pylint/blob/main/CONTRIBUTORS.txt
 
 """Checks for magic values instead of literals."""
 
@@ -84,9 +84,9 @@ class MagicValueChecker(BaseChecker):
 
         operand_value = None
         if const_operands[LEFT_OPERAND] and self._is_magic_value(left_operand):
-            operand_value = left_operand.value
+            operand_value = left_operand.as_string()
         elif const_operands[RIGHT_OPERAND] and self._is_magic_value(right_operand):
-            operand_value = right_operand.value
+            operand_value = right_operand.as_string()
         if operand_value is not None:
             self.add_message(
                 "magic-value-comparison",
