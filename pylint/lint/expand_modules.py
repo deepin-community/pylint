@@ -33,7 +33,7 @@ def discover_package_path(modulepath: str, source_roots: Sequence[str]) -> str:
     # Look for a source root that contains the module directory
     for source_root in source_roots:
         source_root = os.path.realpath(os.path.expanduser(source_root))
-        if os.path.commonpath([source_root, dirname]) == source_root:
+        if os.path.commonpath([source_root, dirname]) in [dirname, source_root]:
             return source_root
 
     # Fall back to legacy discovery by looking for __init__.py upwards as
@@ -87,6 +87,14 @@ def expand_modules(
         if _is_ignored_file(
             something, ignore_list, ignore_list_re, ignore_list_paths_re
         ):
+            result[something] = {
+                "path": something,
+                "name": "",
+                "isarg": False,
+                "basepath": something,
+                "basename": "",
+                "isignored": True,
+            }
             continue
         module_package_path = discover_package_path(something, source_roots)
         additional_search_path = [".", module_package_path, *path]
@@ -122,7 +130,7 @@ def expand_modules(
             )
         except ImportError:
             # Might not be acceptable, don't crash.
-            is_namespace = False
+            is_namespace = not os.path.exists(filepath)
             is_directory = os.path.isdir(something)
         else:
             is_namespace = modutils.is_namespace(spec)
@@ -138,6 +146,7 @@ def expand_modules(
                     "isarg": True,
                     "basepath": filepath,
                     "basename": modname,
+                    "isignored": False,
                 }
         has_init = (
             not (modname.endswith(".__init__") or modname == "__init__")
@@ -153,6 +162,14 @@ def expand_modules(
                 if _is_in_ignore_list_re(
                     os.path.basename(subfilepath), ignore_list_re
                 ) or _is_in_ignore_list_re(subfilepath, ignore_list_paths_re):
+                    result[subfilepath] = {
+                        "path": subfilepath,
+                        "name": "",
+                        "isarg": False,
+                        "basepath": subfilepath,
+                        "basename": "",
+                        "isignored": True,
+                    }
                     continue
 
                 modpath = _modpath_from_file(
@@ -167,5 +184,6 @@ def expand_modules(
                     "isarg": isarg,
                     "basepath": filepath,
                     "basename": modname,
+                    "isignored": False,
                 }
     return result, errors

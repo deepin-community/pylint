@@ -81,7 +81,7 @@ class ImplicitBooleanessChecker(checkers.BaseChecker):
             "equivalent.",
         ),
         "C1804": (
-            '"%s" can be simplified to "%s", if it is striclty a string, as an empty string is falsey',
+            '"%s" can be simplified to "%s", if it is strictly a string, as an empty string is falsey',
             "use-implicit-booleaness-not-comparison-to-string",
             "Empty string are considered false in a boolean context. Following this"
             " check blindly in weakly typed code base can create hard to debug issues."
@@ -125,14 +125,8 @@ class ImplicitBooleanessChecker(checkers.BaseChecker):
         if not utils.is_test_condition(node, parent):
             return
         len_arg = node.args[0]
-        generator_or_comprehension = (
-            nodes.ListComp,
-            nodes.SetComp,
-            nodes.DictComp,
-            nodes.GeneratorExp,
-        )
-        if isinstance(len_arg, generator_or_comprehension):
-            # The node is a generator or comprehension as in len([x for x in ...])
+        if isinstance(len_arg, (nodes.ListComp, nodes.SetComp, nodes.DictComp)):
+            # The node is a comprehension as in len([x for x in ...])
             self.add_message(
                 "use-implicit-booleaness-not-len",
                 node=node,
@@ -209,19 +203,17 @@ class ImplicitBooleanessChecker(checkers.BaseChecker):
                 continue
             op_1 = all_ops[ops_idx]
             op_3 = all_ops[ops_idx + 2]
-            error_detected = False
             if self.linter.is_message_enabled(
                 "use-implicit-booleaness-not-comparison-to-zero"
             ):
+                op = None
                 # 0 ?? X
                 if _is_constant_zero(op_1):
-                    error_detected = True
                     op = op_3
                 # X ?? 0
                 elif _is_constant_zero(op_3):
-                    error_detected = True
                     op = op_1
-                if error_detected:
+                if op is not None:
                     original = f"{op_1.as_string()} {op_2} {op_3.as_string()}"
                     suggestion = (
                         op.as_string()
@@ -234,20 +226,17 @@ class ImplicitBooleanessChecker(checkers.BaseChecker):
                         node=node,
                         confidence=HIGH,
                     )
-                    error_detected = False
             if self.linter.is_message_enabled(
                 "use-implicit-booleaness-not-comparison-to-str"
             ):
-                node_name = ""
+                node_name = None
                 # x ?? ""
                 if utils.is_empty_str_literal(op_1):
-                    error_detected = True
                     node_name = op_3.as_string()
                 # '' ?? X
                 elif utils.is_empty_str_literal(op_3):
-                    error_detected = True
                     node_name = op_1.as_string()
-                if error_detected:
+                if node_name is not None:
                     suggestion = (
                         f"not {node_name}" if op_2 in {"==", "is"} else node_name
                     )

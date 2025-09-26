@@ -30,11 +30,25 @@ lets some error cases through, as pylint does not assess the intervening code:
     if guarded():
         var = 1
 
-    if guarded():
-        print(var)  # emits possibly-used-before-assignment
+    # what if code here affects the result of guarded()?
 
-you may be concerned that ``possibly-used-before-assignment`` is not totally useful
-in this instance. However, consider that pylint, as a static analysis tool, does
-not know if ``guarded()`` is deterministic or talks to
-a database. (Likewise, for ``guarded`` instead of ``guarded()``, any other
-part of your program may have changed its value in the meantime.)
+    if guarded():
+        print(var)
+
+But this exception is limited to the repeating the exact same test.
+This warns:
+
+.. sourcecode:: python
+
+    if guarded():
+        var = 1
+
+    if guarded() or other_condition:
+        print(var)  # [possibly-used-before-assignment]
+
+If you find this surprising, consider that pylint, as a static analysis
+tool, does not know if ``guarded()`` is deterministic or talks to
+a database. For constants (e.g. ``guarded`` versus ``guarded()``),
+this is less of an issue, so in this case,
+``possibly-used-before-assignment`` acts more like a future-proofing style
+preference than an error, per se.

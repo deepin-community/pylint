@@ -1,3 +1,65 @@
+pylint (3.3.4-2) unstable; urgency=medium
+
+  * Drop build-dep on python3-toml
+
+ -- Alexandre Detiste <tchet@debian.org>  Wed, 14 May 2025 17:07:50 +0200
+
+pylint (3.3.4-1) unstable; urgency=medium
+
+  * Team upload.
+
+  [ Alexandre Detiste ]
+  * Switch to X-Style: black.
+
+  [ Colin Watson ]
+  * New upstream release.
+
+ -- Colin Watson <cjwatson@debian.org>  Thu, 27 Feb 2025 11:22:28 +0000
+
+pylint (3.3.3-2) unstable; urgency=medium
+
+  * Remove runtime dependency on python3-setuptools
+
+ -- Alexandre Detiste <tchet@debian.org>  Sun, 19 Jan 2025 13:47:33 +0100
+
+pylint (3.3.3-1) unstable; urgency=medium
+
+  * Team upload.
+
+  [ Alexandre Detiste ]
+  * New upstream release (3.3.2).
+
+  [ Colin Watson ]
+  * Actually override Lintian uses-deprecated-python-stdlib tags in
+    doc/data/messages/ and tests/functional/ (mistakenly not done in last
+    upload due to an omitted "git add").
+  * New upstream release (3.3.3; closes: #1089758, #1091029).
+
+ -- Colin Watson <cjwatson@debian.org>  Sun, 29 Dec 2024 13:18:41 +0000
+
+pylint (3.3.1-2) unstable; urgency=medium
+
+  * Team upload.
+  * Override Lintian uses-deprecated-python-stdlib tags in
+    doc/data/messages/ and tests/functional/.  These files are pylint test
+    input and are not actually executed (closes: #1084621).
+
+ -- Colin Watson <cjwatson@debian.org>  Fri, 11 Oct 2024 16:27:00 +0100
+
+pylint (3.3.1-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream release.
+
+ -- Colin Watson <cjwatson@debian.org>  Tue, 01 Oct 2024 22:50:02 +0100
+
+pylint (3.2.7-1) unstable; urgency=medium
+
+  * Team upload.
+  * New upstream release.
+
+ -- Colin Watson <cjwatson@debian.org>  Sat, 07 Sep 2024 23:08:11 +0100
+
 pylint (3.2.6-1) unstable; urgency=medium
 
   * New upstream version 3.2.6

@@ -6,18 +6,18 @@
 
 from __future__ import annotations
 
+import _string
 import builtins
 import fnmatch
 import itertools
 import numbers
 import re
 import string
-from collections.abc import Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator
 from functools import lru_cache, partial
 from re import Match
-from typing import TYPE_CHECKING, Any, Callable, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
-import _string
 import astroid.objects
 from astroid import TooManyLevelsError, nodes, util
 from astroid.context import InferenceContext
@@ -1843,10 +1843,7 @@ def is_sys_guard(node: nodes.If) -> bool:
     """Return True if IF stmt is a sys.version_info guard.
 
     >>> import sys
-    >>> if sys.version_info > (3, 8):
-    >>>     from typing import Literal
-    >>> else:
-    >>>     from typing_extensions import Literal
+    >>> from typing import Literal
     """
     if isinstance(node.test, nodes.Compare):
         value = node.test.left
@@ -2200,8 +2197,12 @@ def is_terminating_func(node: nodes.Call) -> bool:
                 inferred._proxied, astroid.UnboundMethod
             ):
                 inferred = inferred._proxied._proxied
-            if (
+            if (  # pylint: disable=too-many-boolean-expressions
                 isinstance(inferred, nodes.FunctionDef)
+                and (
+                    not isinstance(inferred, nodes.AsyncFunctionDef)
+                    or isinstance(node.parent, nodes.Await)
+                )
                 and isinstance(inferred.returns, nodes.Name)
                 and (inferred_func := safe_infer(inferred.returns))
                 and hasattr(inferred_func, "qname")

@@ -20,6 +20,7 @@ from pathlib import Path
 from shutil import copy, rmtree
 from unittest import mock
 
+import astroid
 import platformdirs
 import pytest
 from astroid import nodes
@@ -858,7 +859,7 @@ def test_init_hooks_called_before_load_plugins() -> None:
 
 def test_analyze_explicit_script(linter: PyLinter) -> None:
     linter.set_reporter(testutils.GenericTestReporter())
-    linter.check([os.path.join(DATA_DIR, "ascript")])
+    linter.check([os.path.join(DATA_DIR, "a_script")])
     assert len(linter.reporter.messages) == 1
     assert linter.reporter.messages[0] == Message(
         msg_id="C0301",
@@ -869,11 +870,11 @@ def test_analyze_explicit_script(linter: PyLinter) -> None:
             description="Warning without any associated confidence level.",
         ),
         location=MessageLocationTuple(
-            abspath=os.path.join(abspath(dirname(__file__)), "ascript").replace(
-                f"lint{os.path.sep}ascript", f"data{os.path.sep}ascript"
+            abspath=os.path.join(abspath(dirname(__file__)), "a_script").replace(
+                f"lint{os.path.sep}a_script", f"data{os.path.sep}a_script"
             ),
-            path=f"tests{os.path.sep}data{os.path.sep}ascript",
-            module="data.ascript",
+            path=f"tests{os.path.sep}data{os.path.sep}a_script",
+            module="data.a_script",
             obj="",
             line=2,
             column=0,
@@ -1053,7 +1054,9 @@ def test_finds_pyi_file() -> None:
         exit=False,
     )
     assert run.linter.current_file is not None
-    assert run.linter.current_file.endswith("foo.pyi")
+    assert run.linter.current_file.endswith(
+        "a_module_that_we_definitely_dont_use_in_the_functional_tests.pyi"
+    )
 
 
 def test_recursive_finds_pyi_file() -> None:
@@ -1068,7 +1071,9 @@ def test_recursive_finds_pyi_file() -> None:
         exit=False,
     )
     assert run.linter.current_file is not None
-    assert run.linter.current_file.endswith("foo.pyi")
+    assert run.linter.current_file.endswith(
+        "a_module_that_we_definitely_dont_use_in_the_functional_tests.pyi"
+    )
 
 
 def test_no_false_positive_from_pyi_stub() -> None:
@@ -1126,6 +1131,9 @@ def test_recursive_ignore(ignore_parameter: str, ignore_parameter_value: str) ->
     ):
         module = os.path.abspath(join(REGRTEST_DATA_DIR, *regrtest_data_module))
     assert module in linted_file_paths
+    # We lint the modules in `regrtest` in other tests as well. Prevent test pollution by
+    # explicitly clearing the astroid caches.
+    astroid.MANAGER.clear_cache()
 
 
 def test_source_roots_globbing() -> None:

@@ -1,0 +1,2 @@
+pylint source: uses-deprecated-python-stdlib * [doc/data/messages/*]
+pylint source: uses-deprecated-python-stdlib * [tests/functional/*]

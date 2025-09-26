@@ -44,6 +44,7 @@ CALLS_RETURNING_CONTEXT_MANAGERS = frozenset(
     (
         "_io.open",  # regular 'open()' call
         "pathlib.Path.open",
+        "pathlib._local.Path.open",  # Python 3.13
         "codecs.open",
         "urllib.request.urlopen",
         "tempfile.NamedTemporaryFile",
@@ -1691,7 +1692,7 @@ class RefactoringChecker(checkers.BaseTokenChecker):
             return
         inferred = utils.safe_infer(node.func)
         if not inferred or not isinstance(
-            inferred, (nodes.FunctionDef, nodes.ClassDef, bases.UnboundMethod)
+            inferred, (nodes.FunctionDef, nodes.ClassDef, bases.BoundMethod)
         ):
             return
         could_be_used_in_with = (
@@ -2026,12 +2027,13 @@ class RefactoringChecker(checkers.BaseTokenChecker):
         if isinstance(node, nodes.Return):
             return True
         if isinstance(node, nodes.Call):
-            try:
-                funcdef_node = node.func.inferred()[0]
-                if self._is_function_def_never_returning(funcdef_node):
-                    return True
-            except astroid.InferenceError:
-                pass
+            return any(
+                (
+                    isinstance(maybe_func, (nodes.FunctionDef, bases.BoundMethod))
+                    and self._is_function_def_never_returning(maybe_func)
+                )
+                for maybe_func in utils.infer_all(node.func)
+            )
         if isinstance(node, nodes.While):
             # A while-loop is considered return-ended if it has a
             # truthy test and no break statements
@@ -2083,17 +2085,23 @@ class RefactoringChecker(checkers.BaseTokenChecker):
         Returns:
             bool: True if the function never returns, False otherwise.
         """
-        if isinstance(node, (nodes.FunctionDef, astroid.BoundMethod)) and node.returns:
-            return (
-                isinstance(node.returns, nodes.Attribute)
-                and node.returns.attrname == "NoReturn"
-                or isinstance(node.returns, nodes.Name)
-                and node.returns.name == "NoReturn"
-            )
         try:
-            return node.qname() in self._never_returning_functions
+            if node.qname() in self._never_returning_functions:
+                return True
         except (TypeError, AttributeError):
-            return False
+            pass
+
+        try:
+            returns: nodes.NodeNG | None = node.returns
+        except AttributeError:
+            return False  # the BoundMethod proxy may be a lambda without a returns
+
+        return (
+            isinstance(returns, nodes.Attribute)
+            and returns.attrname in {"NoReturn", "Never"}
+            or isinstance(returns, nodes.Name)
+            and returns.name in {"NoReturn", "Never"}
+        )
 
     def _check_return_at_the_end(self, node: nodes.FunctionDef) -> None:
         """Check for presence of a *single* return statement at the end of a

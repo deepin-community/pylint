@@ -219,10 +219,45 @@ class TestRunTC:
         self._runtest([UNNECESSARY_LAMBDA, "--disable=all"], out=out, code=32)
         assert "No files to lint: exiting." in out.getvalue().strip()
 
+    def test_disable_all_enable_invalid(self) -> None:
+        # Reproduces issue #9403. If disable=all is used no error was raised for invalid messages unless
+        # unknown-option-value was manually enabled.
+        out = StringIO()
+        self._runtest(
+            # Enable one valid message to not run into "No files to lint: exiting."
+            [
+                UNNECESSARY_LAMBDA,
+                "--disable=all",
+                "--enable=import-error",
+                "--enable=foo",
+            ],
+            out=out,
+            code=0,
+        )
+        assert (
+            "W0012: Unknown option value for '--enable', expected a valid pylint message and got 'foo'"
+            in out.getvalue().strip()
+        )
+
     def test_output_with_verbose(self) -> None:
         out = StringIO()
-        self._runtest([UNNECESSARY_LAMBDA, "--verbose"], out=out, code=4)
-        assert "Checked 1 files, skipped 0 files" in out.getvalue().strip()
+        self._runtest(
+            [
+                UNNECESSARY_LAMBDA,
+                join(
+                    HERE,
+                    "regrtest_data",
+                    "directory",
+                    "ignored_subdirectory",
+                    "failing.py",
+                ),
+                "--ignore-paths=.*failing.*",
+                "--verbose",
+            ],
+            out=out,
+            code=4,
+        )
+        assert "Checked 1 files, skipped 1 files/modules" in out.getvalue().strip()
 
     def test_no_out_encoding(self) -> None:
         """Test redirection of stdout with non ascii characters."""
@@ -1084,7 +1119,7 @@ a.py:1:4: E0001: Parsing failed: 'invalid syntax (a, line 1)' (syntax-error)"""
             (
                 "colorized",
                 (
-                    "{path}:4:4: W0612: \x1B[35mUnused variable 'variable'\x1B[0m (\x1B[35munused-variable\x1B[0m)"
+                    "{path}:4:4: W0612: \x1b[35mUnused variable 'variable'\x1b[0m (\x1b[35munused-variable\x1b[0m)"
                 ),
             ),
             ("json", '"message": "Unused variable \'variable\'",'),
@@ -1192,7 +1227,10 @@ a.py:1:4: E0001: Parsing failed: 'invalid syntax (a, line 1)' (syntax-error)"""
         test would fail due these errors.
         """
         directory = join(HERE, "regrtest_data", "directory")
-        self._runtest([directory, "--recursive=y", f"--ignore={ignore_value}"], code=0)
+        self._runtest(
+            [directory, "--verbose", "--recursive=y", f"--ignore={ignore_value}"],
+            code=0,
+        )
 
     @pytest.mark.parametrize("ignore_pattern_value", ["ignored_.*", "failing.*"])
     def test_ignore_pattern_recursive(self, ignore_pattern_value: str) -> None:
@@ -1387,7 +1425,7 @@ class TestCallbackOptions:
         [
             [["--help-msg", "W0101"], ":unreachable (W0101)", False],
             [["--help-msg", "WX101"], "No such message id", False],
-            [["--help-msg"], "--help-msg: expected at least one argumen", True],
+            [["--help-msg"], "--help-msg: expected at least one argument", True],
             [["--help-msg", "C0102,C0103"], ":invalid-name (C0103):", False],
         ],
     )

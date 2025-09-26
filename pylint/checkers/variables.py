@@ -32,7 +32,7 @@ from pylint.checkers.utils import (
     is_sys_guard,
     overridden_method,
 )
-from pylint.constants import PY39_PLUS, TYPING_NEVER, TYPING_NORETURN
+from pylint.constants import TYPING_NEVER, TYPING_NORETURN
 from pylint.interfaces import CONTROL_FLOW, HIGH, INFERENCE, INFERENCE_FAILURE
 from pylint.typing import MessageDefinitionTuple
 
@@ -249,9 +249,7 @@ def _detect_global_scope(
     return frame.lineno < defframe.lineno  # type: ignore[no-any-return]
 
 
-def _infer_name_module(
-    node: nodes.Import, name: str
-) -> Generator[InferenceResult, None, None]:
+def _infer_name_module(node: nodes.Import, name: str) -> Generator[InferenceResult]:
     context = astroid.context.InferenceContext()
     context.lookupname = name
     return node.infer(context, asname=False)  # type: ignore[no-any-return]
@@ -1770,6 +1768,11 @@ class VariablesChecker(BaseChecker):
             if utils.is_ancestor_name(consumer.node, node) or (
                 not is_start_index and self._ignore_class_scope(node)
             ):
+                if any(
+                    node.name == param.name.name for param in consumer.node.type_params
+                ):
+                    return False
+
                 return True
 
             # Ignore inner class scope for keywords in class definition
@@ -1980,7 +1983,9 @@ class VariablesChecker(BaseChecker):
                 )
             return (VariableVisitConsumerAction.RETURN, found_nodes)
 
-        elif isinstance(defstmt, nodes.ClassDef):
+        elif (
+            isinstance(defstmt, nodes.ClassDef) and defnode not in defframe.type_params
+        ):
             return self._is_first_level_self_reference(node, defstmt, found_nodes)
 
         elif isinstance(defnode, nodes.NamedExpr):
@@ -2349,23 +2354,6 @@ class VariablesChecker(BaseChecker):
                             and defnode.col_offset < node.col_offset
                         )
                         or (defnode.lineno < node.lineno)
-                        or (
-                            # Issue in the `ast` module until py39
-                            # Nodes in a multiline string have the same lineno
-                            # Could be false-positive without check
-                            not PY39_PLUS
-                            and defnode.lineno == node.lineno
-                            and isinstance(
-                                defstmt,
-                                (
-                                    nodes.Assign,
-                                    nodes.AnnAssign,
-                                    nodes.AugAssign,
-                                    nodes.Return,
-                                ),
-                            )
-                            and isinstance(defstmt.value, nodes.JoinedStr)
-                        )
                     )
                 ):
                     # Relation of a name to the same name in a named expression
@@ -2376,6 +2364,13 @@ class VariablesChecker(BaseChecker):
                     maybe_before_assign = defnode.value is node or any(
                         anc is defnode.value for anc in node.node_ancestors()
                     )
+                elif (
+                    isinstance(defframe, nodes.ClassDef)
+                    and defnode in defframe.type_params
+                ):
+                    # Generic on parent class:
+                    # class Child[_T](Parent[_T])
+                    maybe_before_assign = False
 
         return maybe_before_assign, annotation_return, use_outer_definition
 
@@ -2630,6 +2625,7 @@ class VariablesChecker(BaseChecker):
             ):
                 return
             # TODO: 4.0: Consider using utils.is_terminating_func
+            # after merging it with RefactoringChecker._is_function_def_never_returning
             if isinstance(else_stmt, nodes.Expr) and isinstance(
                 else_stmt.value, nodes.Call
             ):
@@ -2683,7 +2679,7 @@ class VariablesChecker(BaseChecker):
                 likely_call = assign.iter
                 if isinstance(assign.iter, nodes.IfExp):
                     likely_call = assign.iter.body
-                if isinstance(likely_call, nodes.Call):
+                if isinstance(likely_call, nodes.Call) and likely_call.args:
                     inferred = next(likely_call.args[0].infer())
         except astroid.InferenceError:
             self.add_message("undefined-loop-variable", args=node.name, node=node)
@@ -3374,6 +3370,19 @@ class VariablesChecker(BaseChecker):
 
         self._check_potential_index_error(node, inferred_slice)
 
+    def _inferred_iterable_length(self, iterable: nodes.Tuple | nodes.List) -> int:
+        length = 0
+        for elt in iterable.elts:
+            if not isinstance(elt, nodes.Starred):
+                length += 1
+                continue
+            unpacked = utils.safe_infer(elt.value)
+            if isinstance(unpacked, nodes.BaseContainer):
+                length += len(unpacked.elts)
+            else:
+                length += 1
+        return length
+
     def _check_potential_index_error(
         self, node: nodes.Subscript, inferred_slice: nodes.NodeNG | None
     ) -> None:
@@ -3387,7 +3396,7 @@ class VariablesChecker(BaseChecker):
         # If the node.value is a Tuple or List without inference it is defined in place
         if isinstance(node.value, (nodes.Tuple, nodes.List)):
             # Add 1 because iterables are 0-indexed
-            if len(node.value.elts) < inferred_slice.value + 1:
+            if self._inferred_iterable_length(node.value) < inferred_slice.value + 1:
                 self.add_message(
                     "potential-index-error", node=node, confidence=INFERENCE
                 )
